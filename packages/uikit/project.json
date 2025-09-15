@@ -1,0 +1,11 @@
+{
+  "name": "uikit",
+  "projectType": "library",
+  "sourceRoot": "packages/uikit/src",
+  "targets": {
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    }
+  },
+  "tags": ["scope:uikit", "type:ui"]
+}

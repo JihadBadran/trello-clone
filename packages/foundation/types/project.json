@@ -1,0 +1,11 @@
+{
+  "name": "foundation-types",
+  "projectType": "library",
+  "sourceRoot": "packages/foundation/types/src",
+  "targets": {
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    }
+  },
+  "tags": ["scope:foundation", "type:util"]
+}

@@ -1,0 +1,10 @@
+{
+  "name": "app-boards",
+  "projectType": "library",
+  "sourceRoot": "packages/application/app-boards/src",
+  "targets": {
+    "lint": { "executor": "@nx/eslint:lint" },
+    "test": { "executor": "@nx/vite:test" }
+  },
+  "tags": ["scope:application", "type:app"]
+}

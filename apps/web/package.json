@@ -1,0 +1,13 @@
+{
+  "name": "@trello-clone/web",
+  "version": "0.0.1",
+  "private": true,
+  "devDependencies": {
+    "zod": "^4.1.8"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.57.4",
+    "idb": "^8.0.3",
+    "nanoid": "^5.1.5"
+  }
+}

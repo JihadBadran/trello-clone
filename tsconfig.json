@@ -2,5 +2,63 @@
   "extends": "./tsconfig.base.json",
   "compileOnSave": false,
   "files": [],
-  "references": []
+  "references": [
+    {
+      "path": "./apps/web"
+    },
+    {
+      "path": "./packages/foundation/types"
+    },
+    {
+      "path": "./packages/foundation/validation"
+    },
+    {
+      "path": "./packages/foundation/utils"
+    },
+    {
+      "path": "./packages/uikit"
+    },
+    {
+      "path": "./packages/domain/boards"
+    },
+    {
+      "path": "./packages/infra/idb"
+    },
+    {
+      "path": "./packages/infra/supabase"
+    },
+    {
+      "path": "./packages/infra/sync-tabs"
+    },
+    {
+      "path": "./packages/infra/sync-cloud"
+    },
+    {
+      "path": "./packages/presentation/prez-boards"
+    },
+    {
+      "path": "./packages/application/app-boards"
+    },
+    {
+      "path": "./packages/application/app-boards-react"
+    },
+    {
+      "path": "./packages/application/app-columns"
+    },
+    {
+      "path": "./packages/domain/users"
+    },
+    {
+      "path": "./packages/domain/columns"
+    },
+    {
+      "path": "./packages/domain/cards"
+    }
+  ],
+  "ts-node": {
+    "compilerOptions": {
+      "module": "commonjs",
+      "moduleResolution": "node10"
+    }
+  }
 }

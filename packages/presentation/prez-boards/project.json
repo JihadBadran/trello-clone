@@ -1,0 +1,14 @@
+{
+  "name": "prez-boards",
+  "projectType": "library",
+  "sourceRoot": "packages/presentation/prez-boards/src",
+  "targets": {
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    },
+    "test": {
+      "executor": "@nx/vite:test"
+    }
+  },
+  "tags": ["scope:presentation", "type:feature"]
+}
