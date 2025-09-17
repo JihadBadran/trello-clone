@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.lib.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": ["src/**/*.ts", "../data/src/ports.ts"],
+  "exclude": [
+    "src/**/*.test.*",
+    "src/**/*.spec.*",
+    "vite.config.*",
+    "vitest.config.*"
+  ]
+}

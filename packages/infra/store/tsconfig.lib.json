@@ -1,0 +1,11 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "../../../dist/out-tsc/infra-store",
+    "declaration": true,
+    "emitDeclarationOnly": false,
+    "composite": false
+  },
+  "include": ["src/**/*.{ts,tsx}"],
+  "exclude": ["src/**/*.test.*", "src/**/*.spec.*", "vite.config.*", "vitest.config.*"]
+}

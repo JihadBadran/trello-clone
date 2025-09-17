@@ -1,5 +1,5 @@
-import type { Config } from 'tailwindcss'
-import preset from '@tc/uikit/tailwind-preset'
+import type { Config } from 'tailwindcss';
+import preset from '@tc/uikit/tailwind-preset';
 
 export default {
   presets: [preset],

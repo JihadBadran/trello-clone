@@ -1,13 +1,16 @@
 {
   "extends": "../../../tsconfig.base.json",
-  "files": [],
-  "include": [],
-  "references": [
-    {
-      "path": "./tsconfig.lib.json"
-    },
-    {
-      "path": "./tsconfig.spec.json"
-    }
+  "compilerOptions": {
+    "module": "esnext",
+    "lib": ["ES2022", "DOM"],
+    "moduleResolution": "bundler",
+    "noEmit": true
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": [
+    "src/**/*.test.*",
+    "src/**/*.spec.*",
+    "vite.config.*",
+    "vitest.config.*"
   ]
 }

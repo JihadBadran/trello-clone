@@ -1,0 +1,14 @@
+// packages/features/boards/presentation/tsconfig.json
+{
+  "extends": "../../../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "allowJs": false,
+    "esModuleInterop": false,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "lib": ["es2022", "DOM"]
+  },
+  "files": [],
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+}

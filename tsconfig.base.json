@@ -1,46 +1,81 @@
 {
+  "compileOnSave": false,
   "compilerOptions": {
-    "baseUrl": ".",
-    "rootDir": ".",
-    "composite": true,
-    "declarationMap": true,
-    "emitDeclarationOnly": true,
-    "importHelpers": true,
-    "isolatedModules": true,
-    "lib": ["es2022"],
+    "target": "ES2022",
     "module": "esnext",
     "moduleResolution": "bundler",
-    "noEmitOnError": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitOverride": true,
     "noImplicitReturns": true,
     "noUnusedLocals": true,
     "skipLibCheck": true,
-    "strict": true,
-    "target": "es2022",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "types": ["node", "vite-plugin-pwa/client"],
+    "lib": ["ES2022"],
+    "baseUrl": ".",
     "paths": {
-      "@tc/application-boards": [
-        "packages/application/app-boards/src/index.ts"
+      "@tc/boards/application": [
+        "packages/features/boards/application/src/index.ts"
       ],
-      "@tc/application-boards-react": [
-        "packages/application/app-boards-react/src/index.ts"
+      "@tc/boards/application-react": [
+        "packages/features/boards/application-react/src/index.ts"
       ],
-      "@tc/application-columns": [
-        "packages/application/app-columns/src/index.ts"
+      "@tc/boards/data": ["packages/features/boards/data/src/index.ts"],
+      "@tc/boards/domain": ["packages/features/boards/domain/src/index.ts"],
+      "@tc/boards/presentation": [
+        "packages/features/boards/presentation/src/index.tsx"
       ],
-      "@tc/domain-boards": ["packages/domain/boards/src/index.ts"],
-      "@tc/domain-cards": ["packages/domain/cards/src/index.ts"],
-      "@tc/domain-columns": ["packages/domain/columns/src/index.ts"],
-      "@tc/domain-users": ["packages/domain/users/src/index.ts"],
-      "@tc/foundation-types": ["packages/foundation/types/src/index.ts"],
-      "@tc/prez-boards": ["packages/presentation/prez-boards/src/index.tsx"],
-      "@tc/uikit/*": ["packages/uikit/src/*"],
-      "@tc/uikit/components/*": ["packages/uikit/src/components/*"],
-      "@tc/uikit/lib/*": ["packages/uikit/src/lib/*"],
-      "@tc/uikit/components/ui/*": ["packages/uikit/src/components/ui/*"],
-      "@tc/uikit/components/hooks/*": ["packages/uikit/src/hooks/*"],
+      "@tc/cards/application": [
+        "packages/features/cards/application/src/index.ts"
+      ],
+      "@tc/cards/application-react": [
+        "packages/features/cards/application-react/src/index.ts"
+      ],
+      "@tc/cards/data": ["packages/features/cards/data/src/index.ts"],
+      "@tc/cards/domain": ["packages/features/cards/domain/src/index.ts"],
+      "@tc/cards/presentation": [
+        "packages/features/cards/presentation/src/index.ts"
+      ],
+      "@tc/columns/application": [
+        "packages/features/columns/application/src/index.ts"
+      ],
+      "@tc/columns/application-react": [
+        "packages/features/columns/application-react/src/index.ts"
+      ],
+      "@tc/columns/data": ["packages/features/columns/data/src/index.ts"],
+      "@tc/columns/domain": ["packages/features/columns/domain/src/index.ts"],
+      "@tc/columns/presentation": [
+        "packages/features/columns/presentation/src/index.ts"
+      ],
+      "@tc/foundation/types": ["packages/foundation/types/src/index.ts"],
+      "@tc/foundation/actions": ["packages/foundation/actions/src/index.ts"],
+      "@tc/foundation/utils": ["packages/foundation/utils/src/index.ts"],
+      "@tc/infra/store": ["packages/infra/store/src/index.ts"],
       "@tc/infra/idb": ["packages/infra/idb/src/index.ts"],
+      "@tc/infra/supabase": ["packages/infra/supabase/src/index.ts"],
+      "@tc/infra/sync-cloud": ["packages/infra/sync-cloud/src/index.ts"],
+      "@tc/infra/sync-tabs": ["packages/infra/sync-tabs/src/index.ts"],
+      "@tc/kanban/application": [
+        "packages/features/kanban/application/src/index.ts"
+      ],
+      "@tc/kanban/application-react": [
+        "packages/features/kanban/application-react/src/index.ts"
+      ],
+      "@tc/kanban/presentation": [
+        "packages/features/kanban/presentation/src/index.ts"
+      ],
 
+      // uikit
+      "@tc/uikit/components/*": ["packages/uikit/src/components/*"],
+      "@tc/uikit/hooks/*": ["packages/uikit/src/hooks/*"],
+      "@tc/uikit/lib/*": ["packages/uikit/src/lib/*"],
+      "@tc/uikit/tailwind-preset": ["packages/uikit/tailwind-preset.ts"],
+      "@tc/uikit/ui/*": ["packages/uikit/src/components/ui/*"],
     }
-  }
+  },
+  "exclude": ["node_modules", "dist", "out-tsc", "tmp"]
 }

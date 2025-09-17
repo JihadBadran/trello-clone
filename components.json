@@ -1,8 +1,9 @@
 {
   "$schema": "https://ui.shadcn.com/schema.json",
-  "style": "default",
+  "style": "new-york",
   "rsc": false,
   "tsx": true,
+  "iconLibrary": "lucide",
   "tailwind": {
     "config": "apps/web/tailwind.config.ts",
     "css": "apps/web/src/styles.css",
@@ -11,6 +12,9 @@
   },
   "aliases": {
     "components": "@tc/uikit/components",
-    "utils": "@tc/uikit/lib"
+    "utils": "@tc/uikit/lib/utils",
+    "hooks": "@tc/uikit/hooks",
+    "ui": "@tc/uikit/ui",
+    "lib": "@tc/uikit/lib/index"
   }
 }

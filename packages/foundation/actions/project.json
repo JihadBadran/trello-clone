@@ -1,0 +1,19 @@
+{
+  "name": "foundation-actions",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/foundation/actions/src",
+  "projectType": "library",
+  "tags": ["scope:foundation", "type:util"],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/packages/foundation/actions",
+        "main": "packages/foundation/actions/src/index.ts",
+        "tsConfig": "packages/foundation/actions/tsconfig.lib.json",
+        "assets": ["packages/foundation/actions/*.md"]
+      }
+    }
+  }
+}

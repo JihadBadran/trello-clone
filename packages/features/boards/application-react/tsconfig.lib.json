@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../../../../dist/out-tsc/boards-application-react",
+    "declaration": true,
+    "emitDeclarationOnly": false,
+    "composite": true,
+    "lib": ["ES2022"]
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/**/*.test.*", "src/**/*.spec.*"]
+}

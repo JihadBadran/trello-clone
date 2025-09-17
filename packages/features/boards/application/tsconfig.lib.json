@@ -1,0 +1,17 @@
+{
+  "extends": "../../../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "../../../../dist/out-tsc/boards-application",
+    "declaration": true,
+    "emitDeclarationOnly": false,
+    "composite": false,
+    "lib": ["ES2022"]
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": [
+    "src/**/*.test.*",
+    "src/**/*.spec.*",
+    "vite.config.*",
+    "vitest.config.*"
+  ]
+}

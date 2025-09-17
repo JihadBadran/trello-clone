@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../../../../dist/out-tsc/kanban-application-react",
+    "declaration": true,
+    "emitDeclarationOnly": false,
+    "composite": false,
+    "lib": ["ES2022"]
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/**/*.test.*", "src/**/*.spec.*"]
+}

@@ -38,7 +38,12 @@
       "exclude": [
         "application/*",
         "packages/application/*",
-        "packages/application/app-columns/*"
+        "packages/application/app-columns/*",
+        "packages/data/*",
+        "packages/boards/domain/*",
+        "packages/boards/application/*",
+        "packages/boards/data/*",
+        "packages/features/kanban/application/*"
       ]
     },
     {
@@ -77,7 +82,12 @@
       "include": [
         "application/*",
         "packages/application/*",
-        "packages/application/app-columns/*"
+        "packages/application/app-columns/*",
+        "packages/data/*",
+        "packages/boards/domain/*",
+        "packages/boards/application/*",
+        "packages/boards/data/*",
+        "packages/features/kanban/application/*"
       ],
       "options": {
         "typecheck": {
@@ -128,16 +138,25 @@
       "onlyDependOnLibsWithTags": [
         "scope:application",
         "scope:uikit",
-        "scope:foundation"
+        "scope:foundation",
+        "scope:presentation"
       ]
     },
     {
       "sourceTag": "scope:application",
-      "onlyDependOnLibsWithTags": ["scope:domain", "scope:foundation"]
+      "onlyDependOnLibsWithTags": [
+        "scope:domain",
+        "scope:foundation",
+        "scope:application"
+      ]
     },
     {
       "sourceTag": "scope:application-react",
-      "onlyDependOnLibsWithTags": ["scope:application", "scope:foundation"]
+      "onlyDependOnLibsWithTags": [
+        "scope:application",
+        "scope:foundation",
+        "scope:application-react"
+      ]
     },
     {
       "sourceTag": "scope:infra",

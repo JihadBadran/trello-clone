@@ -27,6 +27,7 @@ export default [
           ],
         },
       ],
+      "@typescript-eslint/no-empty-function": "off",
     },
   },
   {

@@ -3,7 +3,9 @@
   "version": "0.0.1",
   "private": true,
   "devDependencies": {
-    "zod": "^4.1.8"
+    "zod": "^4.1.8",
+    "vite-plugin-pwa": "^0.21.0",
+    "workbox-window": "^7.3.0"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",

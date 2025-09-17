@@ -1,17 +1,20 @@
 import { createRoute } from '@tanstack/react-router';
 import { RootRoute } from './__root';
-import { BoardsFeature } from '@tc/prez-boards';
-import { BoardsRepoIDB } from '@tc/infra/idb';
-const BoardLayout = () => (
-  <div>
-    <BoardsFeature repo={BoardsRepoIDB} />
-  </div>
-);
+import { KanbanBoard } from '@tc/kanban/presentation';
+
+const BoardPage = () => {
+  const { boardId } = BoardRoute.useParams();
+  return (
+    <div className="p-6">
+      <KanbanBoard boardId={boardId} />
+    </div>
+  );
+};
 
 const BoardRoute = createRoute({
-  path: '/boards/:boardId',
+  path: '/boards/$boardId',
   getParentRoute: () => RootRoute,
-  component: BoardLayout,
+  component: BoardPage,
 });
 
 export default BoardRoute;

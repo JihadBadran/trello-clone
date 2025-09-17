@@ -6,5 +6,7 @@ export * from './components/ui/sheet';
 export * from './components/ui/skeleton';
 export * from './components/ui/tooltip';
 export * from './components/ui/sidebar';
+export * from './components/ui/breadcrumb';
+
 
 

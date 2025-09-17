@@ -1,2 +1,2 @@
-export * from './lib/supabase.js';
-export * from './boards.repo';
+export * from './client';
+export * from './types.gen';

@@ -1,0 +1,7 @@
+{
+  "name": "@tc/infra-sync-tabs",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./src/index.ts",
+  "tags": ["scope:infra", "type:util"]
+}

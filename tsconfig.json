@@ -19,7 +19,16 @@
       "path": "./packages/uikit"
     },
     {
-      "path": "./packages/domain/boards"
+      "path": "./packages/features/boards/domain"
+    },
+    {
+      "path": "./packages/features/boards/application"
+    },
+    {
+      "path": "./packages/features/boards/application-react"
+    },
+    {
+      "path": "./packages/features/boards/data"
     },
     {
       "path": "./packages/infra/idb"
@@ -33,27 +42,6 @@
     {
       "path": "./packages/infra/sync-cloud"
     },
-    {
-      "path": "./packages/presentation/prez-boards"
-    },
-    {
-      "path": "./packages/application/app-boards"
-    },
-    {
-      "path": "./packages/application/app-boards-react"
-    },
-    {
-      "path": "./packages/application/app-columns"
-    },
-    {
-      "path": "./packages/domain/users"
-    },
-    {
-      "path": "./packages/domain/columns"
-    },
-    {
-      "path": "./packages/domain/cards"
-    }
   ],
   "ts-node": {
     "compilerOptions": {

@@ -1,0 +1,175 @@
+# Windsurf Rules
+
+## Global Brief
+- Monorepo: **Nx + pnpm**
+- State: **Zustand** (vanilla store + React hooks)
+- Data: **Supabase** (Postgres + Realtime) + **IndexedDB** (outbox)
+- Sync: **leader-tab only** pushes outbox → cloud; all tabs receive **broadcasted actions** and **Supabase Realtime**
+- Domain-driven slicing per feature: **boards**, **columns**, **cards**. Aggregation feature: **kanban**
+- Each feature must be independently usable (slice, actions, data, provider). Kanban composes features.
+
+## Directory Structure
+```
+packages/
+  foundation/
+    actions/       # shared Action/ActionImpl types
+    types/         # shared scalars/types
+    utils/         # compareLww, etc.
+
+  infra/
+    idb/           # IdbOutbox, IdbCursor, helpers
+    supabase/      # supabase client + typed RPC
+    sync-cloud/    # MultiSyncController
+    sync-tabs/     # createTabLeader, makeBroadcaster
+
+  features/
+    boards/
+      application/
+      application-react/
+      data/
+      domain/
+      presentation/
+
+    columns/…      # same as boards
+    cards/…        # same as boards
+
+    kanban/
+      application/
+      application-react/
+      presentation/
+```
+
+## Naming Conventions
+- Action type prefixes: `boards/*`, `columns/*`, `cards/*`
+- Outbox topics: `"boards" | "columns" | "cards"`
+- File names: `repo.idb.ts`, `repo.cloud.ts`, `realtime.ts`, `withActionsSlice.ts`, `actions.ts`, `store.ts`, `provider.tsx`, `hooks.tsx`
+
+## Pattern (per feature)
+1. **Slice + Middleware**
+   - Zustand slice defines state + mutations
+   - Middleware `withActionsSlice` adds:
+     - `register(type, impl)`
+     - `dispatch(action, { localOnly? })`
+       - Runs `toLocal` (mutate state, broadcast)
+       - Runs `toPersist` (write IDB + enqueue outbox)
+
+2. **Provider**
+   - Build store with middleware
+   - Register actions
+   - Hydrate from IDB
+   - Subscribe to Supabase Realtime
+   - BroadcastChannel for cross-tab sync
+   - Leader election → run MultiSyncController
+
+3. **Data Contracts**
+   - **IDB repo**: getAll, put, enqueue
+   - **Cloud repo**: push, pullSince
+   - **LocalRepo.applyFromCloud**: LWW then write to IDB
+
+4. **Sync**
+   - MultiSyncController manages push + pull for all topics
+   - Outbox & cursor are IDB-based
+
+## Guardrails
+- No cloud calls in `toLocal`
+- No cloud calls in providers
+- Outbox draining only in controller (leader only)
+- Followers must not persist on replayed actions (`localOnly: true`)
+- Handlers must be idempotent (LWW timestamps)
+
+## Ready Prompts for Windsurf
+
+### A) Boards application
+```
+Create/overwrite:
+1) packages/features/boards/application/store.ts
+   - Board type, BoardsSlice, hydrateBoards, upsertBoard
+2) packages/features/boards/application/withActionsSlice.ts
+   - Middleware adding register/listActions/dispatch
+3) packages/features/boards/application/actions.ts
+   - BoardsCtx, BoardsStore, withBoardsActions, registerBoardsActions
+   - Register 'boards/create' and 'boards/archive'
+4) Barrel packages/features/boards/application/index.ts
+```
+
+### B) Boards data
+```
+Create/overwrite:
+1) packages/features/boards/data/repo.idb.ts
+2) packages/features/boards/data/realtime.ts
+3) Barrel index.ts
+```
+
+### C) Boards provider + hooks
+```
+1) packages/features/boards/application-react/provider.tsx
+   - Build store, register actions, hydrate, realtime, bus, leader sync
+2) packages/features/boards/application-react/hooks.tsx
+   - BoardsCtx, useBoards, useBoardsDispatch, useBoardsIsLeader
+   - Helpers: useBoard, useBoardsList, useCreateBoard, useArchiveBoard
+```
+
+### D) Infra sync-tabs
+```
+1) election.ts: createTabLeader(namespace) using tab-election Tab API
+2) broadcast.ts: makeBroadcaster<T>(name)
+3) Barrel index.ts
+```
+
+### E) Infra sync-cloud
+```
+1) types.ts (provided)
+2) MultiSyncController.ts (provided)
+3) index.ts
+```
+
+### F) Columns and Cards
+```
+Replicate Boards feature with appropriate actions:
+- columns: create, deleteSoft, updateTitle, resequence
+- cards: create, move, deleteSoft, update
+```
+
+### G) Kanban provider
+```
+1) application-react/provider.tsx
+   - Compose boards, columns, cards middlewares
+   - Hydrate all 3 features
+   - Subscribe realtime for all
+   - Bus receive → dispatch localOnly
+   - Leader → startKanbanSync()
+2) Export useKanban(selector), useKanbanDispatch()
+```
+
+## Quick Templates
+
+### Slice mutation
+```ts
+upsertX(row: X) { set(s => ({ xs: { ...s.xs, [row.id]: row } })) }
+hydrateX(rows: X[]) { set(s => ({ xs: Object.fromEntries(rows.map(r => [r.id, r])) })) }
+```
+
+### Action registration
+```ts
+register('<prefix>/create', {
+  toLocal: ({ state }, { payload }) => state.upsertX({ ...payload, updatedAt: new Date().toISOString() }),
+  toPersist: async ({ repos }, { payload }) => { await repos.xs.upsert({ ...payload, updatedAt: new Date().toISOString() }) }
+})
+```
+
+### Provider bus receive
+```ts
+const unsubBus = bus.subscribe(async ({ from, type, payload, meta }) => {
+  if (from === TAB_ID) return
+  await store.getState().dispatch({ type, payload, meta }, { localOnly: true })
+})
+```
+
+### Leader wiring
+```ts
+let stopSync: null | (()=>void) = null
+const unsubLeader = leader.onLeaderChange(isLeader => {
+  if (isLeader) stopSync = startKanbanSync()
+  else { stopSync?.(); stopSync = null }
+})
+```

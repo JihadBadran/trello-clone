@@ -1,4 +1,5 @@
-import { cn } from "@tc/uikit/lib"
+import { cn } from "../../lib"
+
 
 function Skeleton({ className, ...props }: React.ComponentProps<"div">) {
   return (

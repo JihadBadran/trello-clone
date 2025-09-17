@@ -1,0 +1,4 @@
+ignoreWorkspaceRootCheck: true
+packages:
+  - "app/*"
+  - "packages/*"

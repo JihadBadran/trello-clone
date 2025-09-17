@@ -4,12 +4,14 @@ import { createBrowserHistory, createRouter, RouterProvider } from '@tanstack/re
 import { RootRoute } from './routes/__root';
 import MainRoute from './routes';
 import BoardRoute from './routes/board';
+import BoardsRoute from './routes/boards';
+import { registerSW } from 'virtual:pwa-register'
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
 
-const routeTree = RootRoute.addChildren([MainRoute, BoardRoute])
+const routeTree = RootRoute.addChildren([MainRoute, BoardRoute, BoardsRoute]);
 
 // Create a new router instance
 const router = createRouter({
@@ -23,6 +25,8 @@ declare module '@tanstack/react-router' {
     router: typeof router;
   }
 }
+
+registerSW({ immediate: true, onOfflineReady: () => alert('App is ready to work offline!') })
 
 root.render(
   <StrictMode>
