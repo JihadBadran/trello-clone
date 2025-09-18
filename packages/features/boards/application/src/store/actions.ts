@@ -1,9 +1,9 @@
 import type { StoreApi } from 'zustand';
 import type { Action, ActionImpl } from '@tc/foundation/actions';
 import { withActionsSlice, type SliceActionsApi } from '@tc/infra/store';
-import { createBoardsSlice, type BoardsSlice } from './boards.slice';
+import { createBoardsSlice } from './boards.slice';
 import { BoardsRepoIDB } from '@tc/boards/data';
-import { Board } from '@tc/boards/domain';
+import { Board, BoardsSlice } from '@tc/boards/domain';
 
 /** Context handed to handlers */
 export type BoardsCtx = {
@@ -33,11 +33,11 @@ export const withBoardsActions = (deps: {
 
 /** Register default Boards actions */
 export function registerBoardsActions(store: StoreApi<BoardsStore>) {
-  const register = store.getState().register!;
+  const register = store.getState().register;
 
   // boards/create
   const createBoard: ActionImpl<Action<Board>, BoardsCtx> = {
-    toLocal: ({ api }, { payload, type }: Action<Board>) => {
+    toLocal: ({ api }, { payload }: Action<Board>) => {
       api.getState().upsertBoard({ ...payload, is_archived: false, updated_at: new Date().toISOString() });
     },
     toPersist: async ({ repos }, { payload, type }: Action<Board>) => {

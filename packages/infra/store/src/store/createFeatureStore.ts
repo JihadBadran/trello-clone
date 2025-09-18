@@ -6,7 +6,7 @@ import {
   type CloudRepo,
   type ChannelConfig,
 } from '@tc/infra/sync-cloud';
-import { IdbOutbox, IdbCursor } from '@tc/infra/idb';
+import { IdbOutbox, getCursor, setCursor } from '@tc/infra/idb';
 import { type SliceActionsApi } from './withActionsSlice';
 import { Action } from '@tc/foundation/actions';
 
@@ -77,7 +77,11 @@ export function createFeatureStore<S extends FeatureSlice, C extends FeatureCtx,
       const controller = new MultiSyncController({
         channels: { [topic]: channel },
         outbox: new IdbOutbox(),
-        cursor: new IdbCursor(topic),
+        // Provide a multi-topic cursor adapter compliant with CursorApi
+        cursor: {
+          get: (t: string) => getCursor(t),
+          set: (t: string, v: string) => setCursor(t, v),
+        },
         schedule: (fn, ms) => {
           const t = setTimeout(fn, ms);
           return { cancel: () => clearTimeout(t) };

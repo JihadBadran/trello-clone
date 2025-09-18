@@ -51,11 +51,12 @@
       "@tc/columns/presentation": [
         "packages/features/columns/presentation/src/index.ts"
       ],
-      "@tc/foundation/types": ["packages/foundation/types/src/index.ts"],
       "@tc/foundation/actions": ["packages/foundation/actions/src/index.ts"],
+      "@tc/foundation/types": ["packages/foundation/types/src/index.ts"],
       "@tc/foundation/utils": ["packages/foundation/utils/src/index.ts"],
-      "@tc/infra/store": ["packages/infra/store/src/index.ts"],
+      "@tc/foundation/validation": ["packages/foundation/validation/src/index.ts"],
       "@tc/infra/idb": ["packages/infra/idb/src/index.ts"],
+      "@tc/infra/store": ["packages/infra/store/src/index.ts"],
       "@tc/infra/supabase": ["packages/infra/supabase/src/index.ts"],
       "@tc/infra/sync-cloud": ["packages/infra/sync-cloud/src/index.ts"],
       "@tc/infra/sync-tabs": ["packages/infra/sync-tabs/src/index.ts"],
@@ -68,13 +69,14 @@
       "@tc/kanban/presentation": [
         "packages/features/kanban/presentation/src/index.ts"
       ],
-
-      // uikit
+      "@tc/uikit": ["packages/uikit/src/index.ts"],
       "@tc/uikit/components/*": ["packages/uikit/src/components/*"],
       "@tc/uikit/hooks/*": ["packages/uikit/src/hooks/*"],
       "@tc/uikit/lib/*": ["packages/uikit/src/lib/*"],
       "@tc/uikit/tailwind-preset": ["packages/uikit/tailwind-preset.ts"],
       "@tc/uikit/ui/*": ["packages/uikit/src/components/ui/*"],
+      "@tc/uikit/icons": ["packages/uikit/src/icons/index.tsx"],
+      "@tc/auth": ["packages/capabilities/auth/src/index.tsx"],
     }
   },
   "exclude": ["node_modules", "dist", "out-tsc", "tmp"]

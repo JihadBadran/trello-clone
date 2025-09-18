@@ -3,10 +3,9 @@ import type { ActionImpl } from '@tc/foundation/actions';
 import { withActionsSlice, type SliceActionsApi } from '@tc/infra/store';
 import { createColumnsSlice, type ColumnsSlice } from './columns.slice';
 import { Action } from '@tc/foundation/actions';
-import { ColumnsRepo } from './ports';
-import { ColumnsRepoIDB } from '@tc/columns/data';
 import { ISODateTime } from '@tc/foundation/types';
-import { Column } from '@tc/columns/domain';
+import { Column, ColumnsRepo } from '@tc/columns/domain';
+import { ColumnsRepoIDB } from '@tc/columns/data';
 
 /** Context handed to handlers */
 export type ColumnsCtx = {
@@ -36,7 +35,8 @@ export const withColumnsActions = (deps: {
 
 /** Register default Columns actions */
 export function registerColumnsActions(store: StoreApi<ColumnsStore>) {
-  const register = store.getState().register!;
+  const register = store.getState().register;
+  if (!register) return;
 
   const createColumn: ActionImpl<{ type: 'columns/create'; payload: Column }, ColumnsCtx> = {
     toLocal: ({ api }, { payload }) => {
@@ -65,9 +65,25 @@ export function registerColumnsActions(store: StoreApi<ColumnsStore>) {
     },
   };
 
+  const resequence: ActionImpl<{ type: 'columns/resequence', payload: { boardId: string, columnId: string, newPosition: number } }, ColumnsCtx> = {
+    toLocal: ({ api }, { payload }) => {
+      const column = api.getState().columns[payload.columnId];
+      if (column) {
+        api.getState().upsertColumn({ ...column, position: payload.newPosition, updated_at: new Date().toISOString() as ISODateTime });
+      }
+    },
+    toPersist: async ({ repos }, { payload }) => {
+      const column = await repos.columns.get(payload.columnId);
+      if (column) {
+        await repos.columns.upsert({ ...column, position: payload.newPosition, updated_at: new Date().toISOString() as ISODateTime });
+      }
+    },
+  };
+
   register('columns/create', createColumn as any);
   register('columns/update', updateColumn as any);
   register('columns/delete', deleteColumn as any);
+  register('columns/resequence', resequence as any);
 }
 
 /** Convenience factory to build a standalone Columns store */

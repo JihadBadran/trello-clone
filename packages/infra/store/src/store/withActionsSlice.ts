@@ -27,11 +27,14 @@ export function withActionsSlice<S extends object, Ctx extends object>(deps: {
       };
 
       const dispatch: SliceActionsApi<Ctx>['dispatch'] = async (action, opts) => {
+        console.log(`[${action.type}] Dispatching action: `, action, opts);
         const handler = actions.get(action.type);
         if (!handler) throw new Error(`Action ${action.type} not registered`);
 
         const ctx = deps.makeCtx(api as StoreApi<S>);
         const { publish, tabId } = ctx;
+
+        console.log(`[${action.type}] handler: `, handler);
 
         // 1. Run local mutation
         if (handler.toLocal) {

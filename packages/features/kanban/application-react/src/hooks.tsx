@@ -1,39 +1,94 @@
-import React, { useMemo, useContext, useEffect } from 'react';
-import { useSyncExternalStoreWithSelector } from 'use-sync-external-store/with-selector';
-import { makeKanbanStore, type KanbanStore } from '@tc/kanban/application';
+import React, { useMemo, useContext, useEffect, useCallback } from 'react';
+import { makeKanbanStore, KanbanStore } from '@tc/kanban/application';
 import { tabSync } from '@tc/infra/sync-tabs';
+import { createAndStartSync } from '@tc/infra/sync-cloud';
 import type { Action } from '@tc/foundation/actions';
 
-// Import repos for hydration
-import { BoardsRepoIDB } from '@tc/boards/data';
-import { ColumnsRepoIDB } from '@tc/columns/data';
-import { CardsRepoIDB } from '@tc/cards/data';
+// Import repos for hydration and sync
+import { BoardsRepoIDB, BoardsRepoSupabase } from '@tc/boards/data';
+import { ColumnsRepoIDB, ColumnsRepoSupabase } from '@tc/columns/data';
+import { CardsRepoIDB, CardsRepoSupabase } from '@tc/cards/data';
 
 /**
  * Subscribes to cross-tab messages and dispatches them to the local store.
  * This ensures that actions performed in one tab are reflected in all other tabs.
  */
-function useTabSync(store: import('zustand').StoreApi<KanbanStore>) {
+/**
+ * Wires up the leader election and cloud sync controller.
+ * The leader tab is responsible for running the sync process.
+ */
+function useLeaderSync() {
+
+  useEffect(() => {
+    let stopSync: (() => void) | null = null;
+
+    // This function configures and starts the cloud sync process.
+    const startKanbanSync = () => {
+      return createAndStartSync({
+        // pollInterval: 5000,
+        channels: {
+          boards: {
+            topic: 'boards',
+            local: BoardsRepoIDB,
+            cloud: BoardsRepoSupabase,
+          },
+          columns: {
+            topic: 'columns',
+            local: ColumnsRepoIDB,
+            cloud: ColumnsRepoSupabase,
+          },
+          cards: {
+            topic: 'cards',
+            local: CardsRepoIDB,
+            cloud: CardsRepoSupabase,
+          },
+        },
+      });
+    };
+
+    const unsub = tabSync.onLeaderChange(isLeader => {
+      console.log('[sync] leader change', { isLeader })
+      if (isLeader) {
+        console.log('[sync] leader → start sync')
+        stopSync = startKanbanSync()
+      } else {
+        console.log('[sync] follower → stop sync')
+        stopSync?.()
+        stopSync = null
+      }
+    })
+
+    // Cleanup: unsubscribe, stop sync, and destroy leader to release resources.
+    return () => {
+      unsub();
+      stopSync?.();
+      // tabSync.cleanup();
+    };
+  }, []);
+}
+
+function useTabSync(dispatch: (action: Action, options?: { localOnly?: boolean }) => void) {
   useEffect(() => {
     const unsub = tabSync.subscribe(async (action) => {
+      console.log('[sync] received action', action)
       // Ignore messages from the same tab
       if (action.from === tabSync.TAB_ID) {
         return;
       }
       // Dispatch the action to the local store, marking it as localOnly
       // to prevent it from being re-broadcasted.
-      await store.getState().dispatch(action, { localOnly: true });
+      await dispatch(action, { localOnly: true });
     });
 
     return () => {
       unsub();
     };
-  }, [store]);
+  }, [dispatch]);
 }
 
 // 1. Define the context shape
 type KanbanContextValue = {
-  store: import('zustand').StoreApi<KanbanStore>;
+  store: import('zustand').UseBoundStore<import('zustand').StoreApi<KanbanStore>>;
 };
 
 export const KanbanContext = React.createContext<KanbanContextValue | null>(null);
@@ -63,8 +118,16 @@ export const KanbanProviderInternal = ({ children }: { children: React.ReactNode
     return store;
   }, []);
 
-  // Use the new hook to sync tabs
-  useTabSync(store);
+  // Wire up cross-tab state synchronization.
+  const dispatch = useCallback(
+    (action: Action, opts?: { localOnly?: boolean }) =>
+      store.getState().dispatch(action, opts),
+    [store]
+  );
+  useTabSync(dispatch);
+
+  // Wire up leader election and cloud sync.
+  useLeaderSync();
 
   return <KanbanContext.Provider value={{ store }}>{children}</KanbanContext.Provider>;
 };
@@ -72,20 +135,48 @@ export const KanbanProviderInternal = ({ children }: { children: React.ReactNode
 // 3. Create the useKanbanStore hook
 export function useKanbanStore<T>(
   selector: (state: KanbanStore) => T,
-  equalityFn: (a: T, b: T) => boolean = Object.is
 ) {
-  const { store } = useContext(KanbanContext)!;
-  return useSyncExternalStoreWithSelector(
-    store.subscribe,
-    store.getState,
-    store.getState, // server snapshot
-    selector,
-    equalityFn
-  );
+  const storeContext = useContext(KanbanContext);
+  const state = storeContext?.store((state) => state);
+  if (!storeContext || !state) {
+    throw new Error('useKanbanStore must be used within a KanbanProvider');
+  }
+  return selector(state);
+}
+
+export function useKanbanBoard(boardId: string) {
+  const storeContext = useContext(KanbanContext);
+  const state = storeContext?.store((state) => state);
+  if (!storeContext || !state) {
+    throw new Error('useKanbanBoard must be used within a KanbanProvider');
+  }
+  return state.boards[boardId];
+}
+
+export function useKanbanColumns(boardId: string) {
+  const storeContext = useContext(KanbanContext);
+  const state = storeContext?.store((state) => state);
+  if (!storeContext || !state) {
+    throw new Error('useKanbanColumns must be used within a KanbanProvider');
+  }
+  return Object.values(state.columns).filter(c => c.board_id === boardId);
+}
+
+export function useKanbanCards(boardId: string) {
+  const storeContext = useContext(KanbanContext);
+  const state = storeContext?.store((state) => state);
+  if (!storeContext || !state) {
+    throw new Error('useKanbanCards must be used within a KanbanProvider');
+  }
+  return Object.values(state.cards).filter(c => c.board_id === boardId);
 }
 
 // 4. Create the useKanbanDispatch hook
 export function useKanbanDispatch() {
-  const { store } = useContext(KanbanContext)!;
-  return store.getState().dispatch;
+  const storeContext = useContext(KanbanContext);
+  const state = storeContext?.store((state) => state);
+  if (!storeContext || !state) {
+    throw new Error('useKanbanDispatch must be used within a KanbanProvider');
+  }
+  return state.dispatch;
 }

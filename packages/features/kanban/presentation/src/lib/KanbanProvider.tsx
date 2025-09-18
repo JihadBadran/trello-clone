@@ -13,155 +13,40 @@ import {
   KeyboardSensor,
   MouseSensor,
   TouchSensor,
-  useDroppable,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import { arrayMove, SortableContext, useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { arrayMove } from '@dnd-kit/sortable';
 import {
   createContext,
-  type HTMLAttributes,
   type ReactNode,
-  useContext,
   useState,
 } from 'react';
 import { createPortal } from 'react-dom';
 import tunnel from 'tunnel-rat';
-import { Card } from './ui/card';
-import { ScrollArea, ScrollBar } from './ui/scroll-area';
-import { cn } from '../lib';
+
 const t = tunnel();
 export type { DragEndEvent } from '@dnd-kit/core';
-type KanbanItemProps = {
+
+export type KanbanItemProps = {
   id: string;
   name: string;
   column: string;
 } & Record<string, unknown>;
-type KanbanColumnProps = {
+
+export type KanbanColumnProps = {
   id: string;
   name: string;
 } & Record<string, unknown>;
-type KanbanContextProps<
-  T extends KanbanItemProps = KanbanItemProps,
-  C extends KanbanColumnProps = KanbanColumnProps,
-> = {
+
+export type KanbanContextProps<T extends KanbanItemProps = KanbanItemProps, C extends KanbanColumnProps = KanbanColumnProps> = {
   columns: C[];
   data: T[];
   activeCardId: string | null;
 };
-const KanbanContext = createContext<KanbanContextProps>({
-  columns: [],
-  data: [],
-  activeCardId: null,
-});
-export type KanbanBoardProps = {
-  id: string;
-  children: ReactNode;
-  className?: string;
-};
-export const KanbanBoard = ({ id, children, className }: KanbanBoardProps) => {
-  const { isOver, setNodeRef } = useDroppable({
-    id,
-  });
-  return (
-    <div
-      className={cn(
-        'flex size-full min-h-40 flex-col divide-y overflow-hidden rounded-md border bg-secondary text-xs shadow-sm ring-2 transition-all',
-        isOver ? 'ring-primary' : 'ring-transparent',
-        className
-      )}
-      ref={setNodeRef}
-    >
-      {children}
-    </div>
-  );
-};
-export type KanbanCardProps<T extends KanbanItemProps = KanbanItemProps> = T & {
-  children?: ReactNode;
-  className?: string;
-};
-export const KanbanCard = <T extends KanbanItemProps = KanbanItemProps>({
-  id,
-  name,
-  children,
-  className,
-}: KanbanCardProps<T>) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transition,
-    transform,
-    isDragging,
-  } = useSortable({
-    id,
-  });
-  const { activeCardId } = useContext(KanbanContext) as KanbanContextProps;
-  const style = {
-    transition,
-    transform: CSS.Transform.toString(transform),
-  };
-  return (
-    <>
-      <div style={style} {...listeners} {...attributes} ref={setNodeRef}>
-        <Card
-          className={cn(
-            'cursor-grab gap-4 rounded-md p-3 shadow-sm',
-            isDragging && 'pointer-events-none cursor-grabbing opacity-30',
-            className
-          )}
-        >
-          {children ?? <p className="m-0 font-medium text-sm">{name}</p>}
-        </Card>
-      </div>
-      {activeCardId === id && (
-        <t.In>
-          <Card
-            className={cn(
-              'cursor-grab gap-4 rounded-md p-3 shadow-sm ring-2 ring-primary',
-              isDragging && 'cursor-grabbing',
-              className
-            )}
-          >
-            {children ?? <p className="m-0 font-medium text-sm">{name}</p>}
-          </Card>
-        </t.In>
-      )}
-    </>
-  );
-};
-export type KanbanCardsProps<T extends KanbanItemProps = KanbanItemProps> =
-  Omit<HTMLAttributes<HTMLDivElement>, 'children' | 'id'> & {
-    children: (item: T) => ReactNode;
-    id: string;
-  };
-export const KanbanCards = <T extends KanbanItemProps = KanbanItemProps>({
-  children,
-  className,
-  ...props
-}: KanbanCardsProps<T>) => {
-  const { data } = useContext(KanbanContext) as KanbanContextProps<T>;
-  const filteredData = data.filter((item) => item.column === props.id);
-  const items = filteredData.map((item) => item.id);
-  return (
-    <ScrollArea className="overflow-hidden">
-      <SortableContext items={items}>
-        <div
-          className={cn('flex flex-grow flex-col gap-2 p-2', className)}
-          {...props}
-        >
-          {filteredData.map(children)}
-        </div>
-      </SortableContext>
-      <ScrollBar orientation="vertical" />
-    </ScrollArea>
-  );
-};
-export type KanbanHeaderProps = HTMLAttributes<HTMLDivElement>;
-export const KanbanHeader = ({ className, ...props }: KanbanHeaderProps) => (
-  <div className={cn('m-0 p-2 font-semibold text-sm', className)} {...props} />
-);
+
+export const KanbanContext = createContext<KanbanContextProps>({ columns: [], data: [], activeCardId: null });
+
 export type KanbanProviderProps<
   T extends KanbanItemProps = KanbanItemProps,
   C extends KanbanColumnProps = KanbanColumnProps,
@@ -175,6 +60,7 @@ export type KanbanProviderProps<
   onDragEnd?: (event: DragEndEvent) => void;
   onDragOver?: (event: DragOverEvent) => void;
 };
+
 export const KanbanProvider = <
   T extends KanbanItemProps = KanbanItemProps,
   C extends KanbanColumnProps = KanbanColumnProps,
@@ -195,6 +81,7 @@ export const KanbanProvider = <
     useSensor(TouchSensor),
     useSensor(KeyboardSensor)
   );
+
   const handleDragStart = (event: DragStartEvent) => {
     const card = data.find((item) => item.id === event.active.id);
     if (card) {
@@ -202,6 +89,7 @@ export const KanbanProvider = <
     }
     onDragStart?.(event);
   };
+
   const handleDragOver = (event: DragOverEvent) => {
     const { active, over } = event;
     if (!over) {
@@ -227,6 +115,7 @@ export const KanbanProvider = <
     }
     onDragOver?.(event);
   };
+
   const handleDragEnd = (event: DragEndEvent) => {
     setActiveCardId(null);
     onDragEnd?.(event);
@@ -240,6 +129,7 @@ export const KanbanProvider = <
     newData = arrayMove(newData, oldIndex, newIndex);
     onDataChange?.(newData);
   };
+
   const announcements: Announcements = {
     onDragStart({ active }) {
       const { name, column } = data.find((item) => item.id === active.id) ?? {};
@@ -260,6 +150,7 @@ export const KanbanProvider = <
       return `Cancelled dragging the card "${name}"`;
     },
   };
+
   return (
     <KanbanContext.Provider value={{ columns, data, activeCardId }}>
       <DndContext
@@ -271,12 +162,7 @@ export const KanbanProvider = <
         sensors={sensors}
         {...props}
       >
-        <div
-          className={cn(
-            'grid size-full auto-cols-fr grid-flow-col gap-4',
-            className
-          )}
-        >
+        <div className='flex-1 flex flex-row w-full gap-4 py-2 px-6'>
           {columns.map((column) => children(column))}
         </div>
         {typeof window !== 'undefined' &&

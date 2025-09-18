@@ -14,7 +14,7 @@
       "options": {
         "buildTarget": "web:build",
         "port": 4200,
-        "open": true
+        "open": false
       }
     },
     "lint": {

@@ -1,12 +1,17 @@
-import { STORES, getAll, put, del } from '@tc/infra/idb';
+import { STORES, getAll, put, del, get as idbGet } from '@tc/infra/idb';
 import { enqueue } from '@tc/infra/idb';
 import type { Board } from '@tc/boards/domain';
 import { BoardsRepo } from '../ports';
-import { OutboxItem, PushResult } from '@tc/infra/sync-cloud';
+import { OutboxItem } from '@tc/foundation/types';
+import { PushResult } from '@tc/infra/sync-cloud';
 
 export const BoardsRepoIDB: BoardsRepo = {
+  async get(id: string): Promise<Board | null> {
+    const row = await idbGet(STORES.BOARDS, id);
+    return row ? (row as Board) : null;
+  },
   async getAll(): Promise<Board[]> {
-    return await getAll<Board>(STORES.BOARDS);
+    return await getAll(STORES.BOARDS);
   },
   async upsert(b: Board) {
     await put(STORES.BOARDS, b);
@@ -18,7 +23,7 @@ export const BoardsRepoIDB: BoardsRepo = {
   },
   async archive(id: string) {
     // optimistic: caller already flipped isArchived locally
-    await enqueue('boards', 'upsert', { id, isArchived: true });
+    await enqueue('boards', 'upsert', { id, is_archived: true, updated_at: new Date().toISOString() });
   },
   async applyFromCloud(row: Board): Promise<void> {
     // LWW: cloud wins

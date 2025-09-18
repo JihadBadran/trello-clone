@@ -3,11 +3,12 @@ import { Link } from '@tanstack/react-router';
 import { Button } from '@tc/uikit/ui/button';
 import { Input } from '@tc/uikit/ui/input';
 import { useBoardsList, useCreateBoard } from '@tc/boards/application-react';
-import { nanoid } from 'nanoid';
+import { v4 as uuid } from 'uuid';
 import { Card, CardContent, CardHeader, CardTitle } from '@tc/uikit/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@tc/uikit/ui/dialog';
-import { SupabaseAuthClient } from '@supabase/supabase-js/dist/module/lib/SupabaseAuthClient';
 import { supabase } from '@tc/infra/supabase';
+import BoardsEmptyState from './BoardsEmptyState';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@tc/uikit';
 
 export function BoardsList() {
   const boards = useBoardsList({ includeArchived: false });
@@ -21,9 +22,8 @@ export function BoardsList() {
     // get user uid with supabase
     const { data: user } = await supabase.auth.getUser();
     createBoard({
-      id: nanoid(),
       title,
-      ownerId: user?.user?.id ?? '',
+      owner_id: user?.user?.id ?? '',
     });
     setTitle('');
     setOpen(false);
@@ -36,12 +36,12 @@ export function BoardsList() {
         <Button onClick={() => setOpen(true)}>New board</Button>
       </div>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>New board</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col gap-2 items-end justify-end">
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>New board</SheetTitle>
+          </SheetHeader>
+          <div className="flex flex-col gap-2 items-end justify-end px-4">
             <Input
               placeholder="Board title"
               value={title}
@@ -55,12 +55,13 @@ export function BoardsList() {
               <Button onClick={onCreate}>Create</Button>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {boards.map((b: import('@tc/boards/domain').Board) => (
-          <Link key={b.id} to={`/boards/${b.id}`}>
+      {boards.length === 0 ? <BoardsEmptyState /> : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {boards.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()).map((b) => (
+          <Link key={b.id} params={{ board_id: b.id }} to={`/board/$board_id`}>
             <Card>
               <CardHeader>
                 <CardTitle>{b.title}</CardTitle>
@@ -72,6 +73,7 @@ export function BoardsList() {
           </Link>
         ))}
       </div>
+    )}
     </div>
   );
 }

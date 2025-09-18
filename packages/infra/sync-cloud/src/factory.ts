@@ -20,7 +20,7 @@ export type SyncConfig = {
 /**
  * Creates and starts a MultiSyncController based on the provided configuration.
  * This is the generic engine for syncing multiple data types between local IDB and cloud repos.
- * 
+ *
  * @param config - The configuration object specifying channels and poll interval.
  * @returns A function to stop the sync controller.
  */
@@ -34,9 +34,10 @@ export function createAndStartSync(config: SyncConfig): () => void {
       return { cancel: () => clearTimeout(id) };
     },
     now: () => Date.now(),
+    baseIntervalMs: config.pollInterval ?? 5000,
   });
 
-  controller.start(config.pollInterval ?? 5000);
+  controller.start(0);
 
   return () => controller.stop();
 }

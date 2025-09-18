@@ -6,6 +6,7 @@ import type {
   PushResult,
   PullResult,
 } from './types'
+import type { OutboxItem } from '@tc/foundation/types'
 
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n))
 const withJitter = (ms: number, jitter: number) => {
@@ -39,7 +40,7 @@ export class MultiSyncController {
   private running = false
   private paused = false
   private backoff = 0 // current backoff ms (0 means no backoff)
-  private lastRunAt = 0
+  protected lastRunAt = 0
 
   constructor(cfg: ControllerConfig) {
     // de-dupe topics & freeze layout
@@ -64,6 +65,7 @@ export class MultiSyncController {
 
   /** Start periodic sync */
   start(initialDelayMs?: Millis) {
+    console.log('[sync] start', { initialDelayMs })
     if (this.running) return
     this.running = true
     const delay = typeof initialDelayMs === 'number' ? initialDelayMs : 0
@@ -84,6 +86,7 @@ export class MultiSyncController {
 
   /** Manual trigger (awaits a full pass across all channels) */
   async tick(): Promise<void> {
+    console.log('[sync] tick', { running: this.running, paused: this.paused })
     if (!this.running || this.paused) return
     try {
       await this.runOnce()
@@ -111,44 +114,132 @@ export class MultiSyncController {
     return clamp(next, this.baseIntervalMs, this.maxBackoffMs)
   }
 
-  private async runOnce() {
+  protected async runOnce() {
     this.lastRunAt = this.now()
 
     // 1) PUSH outbox per topic (small batches; loop until empty or a transient failure)
+    const pushedByTopic = new Map<string, boolean>()
     for (const ch of this.channels) {
-      await this.pushOutboxBatches(ch)
+      const didPush = await this.pushOutboxBatches(ch)
+      pushedByTopic.set(ch.topic, didPush)
     }
 
-    // 2) PULL changes per topic until up-to-date or transient failure
+    // 2) PULL changes per topic only when needed:
+    //    - initial hydration (no cursor yet)
+    //    - or after a successful push that acknowledged items
     for (const ch of this.channels) {
-      await this.pullSinceCursor(ch)
+      const cursor = await this.cursor.get(ch.topic)
+      const needInitialPull = !cursor
+      const didPush = pushedByTopic.get(ch.topic) === true
+      if (needInitialPull || didPush) {
+        await this.pullSinceCursor(ch)
+      }
     }
   }
 
-  private async pushOutboxBatches(ch: ChannelConfig) {
+  private async pushOutboxBatches(ch: ChannelConfig): Promise<boolean> {
+    console.log('[sync] pushOutboxBatches', { topic: ch.topic })
+    let ackedAny = false
+    // Track latest entity timestamp across loops to handle duplicates spanning batches
+    type EntityLike = { id?: string; updated_at?: string; updatedAt?: string }
+    const seenLatest = new Map<string, { ts: number; at: number; outboxId: string }>()
+    const getTs = (it: OutboxItem) => {
+      const p = it.payload as unknown as EntityLike | undefined
+      const ts: string | undefined = p?.updated_at ?? p?.updatedAt
+      return ts ? Date.parse(ts) : Number.NEGATIVE_INFINITY
+    }
     while (true) {
-      const batch = await this.outbox.readNextBatch(ch.topic, this.pushBatchSize)
-      if (!batch.length) return
+      const rawBatch = await this.outbox.readNextBatch(ch.topic, this.pushBatchSize)
+      console.log('[sync] batch', { rawBatch })
+      if (!rawBatch.length) return ackedAny
 
-      const res: PushResult = await ch.cloud.push(batch)
+      // Deduplicate within the batch by entity id using updated_at (LWW).
+      const { deduped, ackAlso } = this.dedupeByEntity(rawBatch)
+      // Further prune against previously-seen winners across earlier loops
+      const pruned: OutboxItem[] = []
+      const ackAcrossBatches: string[] = []
+      for (const it of deduped) {
+        const p = it.payload as unknown as EntityLike | undefined
+        const id = p?.id
+        if (!id) { pruned.push(it); continue }
+        const ts = getTs(it)
+        const prev = seenLatest.get(id)
+        if (!prev || ts > prev.ts || (ts === prev.ts && it.at > prev.at)) {
+          seenLatest.set(id, { ts, at: it.at, outboxId: it.id })
+          pruned.push(it)
+        } else {
+          // Older than what we already sent/will send this tick → ack it
+          ackAcrossBatches.push(it.id)
+        }
+      }
+      const res: PushResult = await ch.cloud.push(pruned)
       if (!res.ok) {
         if (res.transient) throw res.error ?? new Error('transient push error')
-        // permanent failure → ack to avoid blocking; but log it
-        this.log('[sync] permanent push failure, dropping', { topic: ch.topic, error: res.error })
-        // best effort ack all to prevent dead loop
-        await this.outbox.ack(batch.map((b) => b.id))
-        return
+        // permanent failure → do NOT ack; keep items for future retries
+        this.log('[sync] permanent push failure (no ack). Keeping outbox items.', { topic: ch.topic, error: res.error })
+        return ackedAny
       }
 
-      const ackIds = res.ackIds?.length ? res.ackIds : batch.map((b) => b.id)
-      await this.outbox.ack(ackIds)
+      // Ack all items that were deduplicated out in addition to server-acknowledged items
+      const serverAckIds = Array.isArray(res.ackIds) ? res.ackIds : []
+      const allAckIds = Array.from(new Set([ ...serverAckIds, ...ackAlso, ...ackAcrossBatches ]))
+      if (allAckIds.length === 0) {
+        this.log('[sync] push ok but no ackIds returned; not clearing outbox (will retry later)', { topic: ch.topic })
+        return ackedAny
+      }
+      await this.outbox.ack(allAckIds)
+      ackedAny = true
 
       // if cloud accepted less than batch size, continue anyway; readNextBatch will fetch more or empty
-      if (batch.length < this.pushBatchSize) {
+      if (rawBatch.length < this.pushBatchSize) {
         // probably near-empty; let loop continue to clear remaining quickly
       }
       // loop continues until readNextBatch returns []
     }
+  }
+
+  /**
+   * Deduplicate outbox items by entity id using updated_at (LWW). If timestamps tie,
+   * prefer the item enqueued later (higher `at`). Returns the deduped items to send
+   * and a list of outbox ids to ack as duplicates.
+   */
+  private dedupeByEntity(items: OutboxItem[]): { deduped: OutboxItem[]; ackAlso: string[] } {
+    type EntityLike = { id?: string; updated_at?: string; updatedAt?: string }
+    const byId = new Map<string, OutboxItem>()
+    const ackAlso: string[] = []
+
+    const getTs = (it: OutboxItem) => {
+      const p = it.payload as unknown as EntityLike | undefined
+      const ts: string | undefined = p?.updated_at ?? p?.updatedAt
+      return ts ? Date.parse(ts) : Number.NEGATIVE_INFINITY
+    }
+
+    for (const it of items) {
+      const p = it.payload as unknown as EntityLike | undefined
+      const id: string | undefined = p?.id
+      // If no entity id present, treat as unique record
+      if (!id) {
+        byId.set(it.id, it)
+        continue
+      }
+      const prev = byId.get(id)
+      if (!prev) {
+        byId.set(id, it)
+      } else {
+        const tPrev = getTs(prev)
+        const tCur = getTs(it)
+        if (tCur > tPrev || (tCur === tPrev && it.at > prev.at)) {
+          // current wins → ack previous
+          ackAlso.push(prev.id)
+          byId.set(id, it)
+        } else {
+          // previous wins → ack current
+          ackAlso.push(it.id)
+        }
+      }
+    }
+
+    return { deduped: Array.from(byId.values()), ackAlso }
   }
 
   private async pullSinceCursor(ch: ChannelConfig) {

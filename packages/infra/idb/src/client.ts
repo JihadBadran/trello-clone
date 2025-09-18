@@ -17,10 +17,13 @@ export async function withTx<T>(
   stores: StoreName[] | StoreName,
   fn: (tx: IDBPTransaction<TrelloCloneDB, StoreName[], 'readwrite' | 'readonly' | 'versionchange'>) => Promise<T> | T,
 ): Promise<T> {
+  console.log('[sync] withTx', { mode, stores })
   const d = await db();
   const s = Array.isArray(stores) ? stores : [stores];
+  console.log('[sync] withTx', { d, s })
   const tx = d.transaction(s, mode);
   const res = await fn(tx);
+  console.log('[sync] withTx', { res })
   await tx.done;
   return res;
 }
@@ -42,4 +45,9 @@ export async function put(store: StoreName, value: any): Promise<void> {
 export async function del(store: StoreName, key: string): Promise<void> {
   const d = await db();
   await d.delete(store, key);
+}
+
+export async function get<T>(storeName: StoreName, key: string): Promise<T | null> {
+  const d = await db();
+  return d.get(storeName, key) as T | null;
 }

@@ -7,7 +7,7 @@ import type { TrelloCloneDB } from './schema.types';
  * but infra does not know domain types.
  */
 export const DB_NAME = 'tc'
-export const DB_VERSION = 3 as const
+export const DB_VERSION = 4 as const
 
 // Store names
 export const STORES = {
@@ -36,7 +36,9 @@ export function upgrade(
       s.createIndex('by_updatedAt', 'updatedAt');
     }
     if (!db.objectStoreNames.contains(STORES.OUTBOX)) {
-      tx.db.createObjectStore(STORES.OUTBOX, { keyPath: 'id' });
+      const s = tx.db.createObjectStore(STORES.OUTBOX, { keyPath: 'id' });
+      // Ensure we can query outbox items by topic efficiently
+      s.createIndex('topic', 'topic');
     }
   }
 
@@ -51,14 +53,22 @@ export function upgrade(
   if (oldVersion < 3) {
     if (!db.objectStoreNames.contains(STORES.COLUMNS)) {
       const s = tx.db.createObjectStore(STORES.COLUMNS, { keyPath: 'id' });
-      s.createIndex('by_boardId', 'boardId');
+      s.createIndex('by_board_id', 'board_id');
       s.createIndex('by_updatedAt', 'updatedAt');
     }
     if (!db.objectStoreNames.contains(STORES.CARDS)) {
       const s = tx.db.createObjectStore(STORES.CARDS, { keyPath: 'id' });
-      s.createIndex('by_boardId', 'boardId');
-      s.createIndex('by_columnId', 'columnId');
+      s.createIndex('by_board_id', 'board_id');
+      s.createIndex('by_column_id', 'column_id');
       s.createIndex('by_updatedAt', 'updatedAt');
+    }
+  }
+
+  // v4: add missing index on outbox(topic) for readOutbox()
+  if (oldVersion < 4) {
+    const s = tx.objectStore(STORES.OUTBOX)
+    if (!s.indexNames.contains('topic')) {
+      s.createIndex('topic', 'topic')
     }
   }
 }

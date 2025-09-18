@@ -137,6 +137,7 @@
       "sourceTag": "scope:presentation",
       "onlyDependOnLibsWithTags": [
         "scope:application",
+        "scope:application-react",
         "scope:uikit",
         "scope:foundation",
         "scope:presentation"

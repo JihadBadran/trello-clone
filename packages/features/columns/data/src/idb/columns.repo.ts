@@ -1,12 +1,16 @@
-import { STORES, getAll, put, del } from '@tc/infra/idb';
+import { STORES, getAll, put, del, get as idbGet } from '@tc/infra/idb';
 import { enqueue } from '@tc/infra/idb';
-import type { Column } from '@tc/columns/application';
-import { ColumnsRepo } from '@tc/columns/application';
-import { OutboxItem, PushResult } from '@tc/infra/sync-cloud';
+import type { Column, ColumnsRepo } from '@tc/columns/domain';
+import { PushResult } from '@tc/infra/sync-cloud';
+import { OutboxItem } from "@tc/foundation/types";
 
 export const ColumnsRepoIDB: ColumnsRepo = {
+  async get(id: string): Promise<Column | null> {
+    const col = await idbGet(STORES.COLUMNS, id);
+    return col ? (col as Column) : null;
+  },
   async getAll(): Promise<Column[]> {
-    return await getAll<Column>(STORES.COLUMNS);
+    return await getAll(STORES.COLUMNS);
   },
   async upsert(c: Column) {
     await put(STORES.COLUMNS, c);

@@ -3,7 +3,7 @@ import type { ActionImpl } from '@tc/foundation/actions';
 import { withActionsSlice, type SliceActionsApi } from '@tc/infra/store';
 import { createCardsSlice, type CardsSlice } from './cards.slice';
 import { Action } from '@tc/foundation/actions';
-import { Card, CardsRepo } from '../../domain/src/ports';
+import { Card, CardsRepo } from '@tc/cards/domain';
 import { CardsRepoIDB } from '@tc/cards/data';
 import { ISODateTime } from '@tc/foundation/types';
 
@@ -37,16 +37,7 @@ export const withCardsActions = (deps: {
 export function registerCardsActions(store: StoreApi<CardsStore>) {
   const register = store.getState().register!;
 
-  const createCard: ActionImpl<{ type: 'cards/create'; payload: Card }, CardsCtx> = {
-    toLocal: ({ api }, { payload }) => {
-      api.getState().upsertCard({ ...payload, updated_at: new Date().toISOString() as ISODateTime });
-    },
-    toPersist: async ({ repos }, { payload }) => {
-      await repos.cards.upsert({ ...payload, updated_at: new Date().toISOString() as ISODateTime });
-    },
-  };
-
-  const updateCard: ActionImpl<{ type: 'cards/update'; payload: Card }, CardsCtx> = {
+  const upsertCard: ActionImpl<{ type: 'cards/upsert'; payload: Card }, CardsCtx> = {
     toLocal: ({ api }, { payload }) => {
       api.getState().upsertCard({ ...payload, updated_at: new Date().toISOString() as ISODateTime });
     },
@@ -64,8 +55,7 @@ export function registerCardsActions(store: StoreApi<CardsStore>) {
     },
   };
 
-  register('cards/create', createCard as any);
-  register('cards/update', updateCard as any);
+  register('cards/upsert', upsertCard as any);
   register('cards/delete', deleteCard as any);
 }
 

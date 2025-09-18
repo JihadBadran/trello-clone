@@ -1,6 +1,6 @@
 export function Presentation() {
   return (
-    <div className={styles['container']}>
+    <div>
       <h1>Welcome to Presentation!</h1>
     </div>
   );

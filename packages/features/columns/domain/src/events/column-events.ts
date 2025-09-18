@@ -2,7 +2,7 @@ export type ColumnCreated = {
   type: 'ColumnCreated';
   v: 1;
   at: string;
-  column: { id: string; boardId: string; title: string; position: number };
+  column: { id: string; board_id: string; title: string; position: number };
 };
 
 export type ColumnMoved = {

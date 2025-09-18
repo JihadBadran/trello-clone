@@ -1,12 +1,16 @@
-import { STORES, getAll, put, del } from '@tc/infra/idb';
+import { STORES, getAll, put, del, get as idbGet } from '@tc/infra/idb';
 import { enqueue } from '@tc/infra/idb';
-import type { Card } from '@tc/cards/application';
-import { CardsRepo } from '@tc/cards/application';
-import { OutboxItem, PushResult } from '@tc/infra/sync-cloud';
+import type { Card } from '@tc/cards/domain';
+import { CardsRepo } from '@tc/cards/domain';
+import { PushResult } from '@tc/infra/sync-cloud';
+import { OutboxItem } from "@tc/foundation/types";
 
 export const CardsRepoIDB: CardsRepo = {
+  async get(id: Card['id']) {
+    return await idbGet(STORES.CARDS, id);
+  },
   async getAll(): Promise<Card[]> {
-    return await getAll<Card>(STORES.CARDS);
+    return await getAll(STORES.CARDS);
   },
   async upsert(c: Card) {
     await put(STORES.CARDS, c);

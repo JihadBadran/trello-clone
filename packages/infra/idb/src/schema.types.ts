@@ -1,5 +1,5 @@
 import type { DBSchema } from 'idb';
-import type { OutboxRecord } from './outbox';
+import type { OutboxItem } from '@tc/foundation/types';
 import type { Board } from '@tc/boards/domain';
 import type { Column } from '@tc/columns/domain';
 import type { Card } from '@tc/cards/domain';
@@ -11,7 +11,7 @@ export interface TrelloCloneDB extends DBSchema {
   };
   outbox: {
     key: string;
-    value: OutboxRecord;
+    value: OutboxItem;
     indexes: { topic: string };
   };
   boards: {
@@ -22,11 +22,11 @@ export interface TrelloCloneDB extends DBSchema {
   columns: {
     key: string;
     value: Column;
-    indexes: { by_boardId: string; by_updatedAt: string };
+    indexes: { by_board_id: string; by_updatedAt: string };
   };
   cards: {
     key: string;
     value: Card;
-    indexes: { by_boardId: string; by_columnId: string; by_updatedAt: string };
+    indexes: { by_board_id: string; by_column_id: string; by_updatedAt: string };
   };
 }

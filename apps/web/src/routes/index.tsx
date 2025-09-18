@@ -1,14 +1,8 @@
-import { createRoute, redirect } from '@tanstack/react-router';
-import { RootRoute } from './__root';
-
-const MainRoute = createRoute({
-  path: '/',
-  getParentRoute: () => RootRoute,
+import { createFileRoute, redirect } from '@tanstack/react-router';
+export const Route = createFileRoute('/')({
   beforeLoad: () => {
     throw redirect({
       to: '/boards',
     });
   },
 });
-
-export default MainRoute;

@@ -37,7 +37,8 @@ export function useCards<T>(
   selector: (s: CardsStore) => T,
   equalityFn: (a: T, b: T) => boolean = Object.is,
 ) {
-  const store = React.useContext(CardsCtx)!.store;
+  const store = React.useContext(CardsCtx)?.store;
+  if (!store) throw new Error('useCards must be used inside <CardsProvider>');
   return useSyncExternalStoreWithSelector(
     store.subscribe,
     store.getState,

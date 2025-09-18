@@ -3,6 +3,7 @@ import { useSyncExternalStoreWithSelector } from 'use-sync-external-store/with-s
 import { makeColumnsStore, registerColumnsActions, type ColumnsStore } from '@tc/columns/application';
 import { ColumnsRepoIDB, ColumnsRepoSupabase } from '@tc/columns/data';
 import { createFeatureStore } from '@tc/infra/store';
+import { Column } from '@tc/columns/domain';
 
 type ColumnsContext = {
   store: import('zustand').StoreApi<ColumnsStore>;
@@ -33,18 +34,13 @@ export const ColumnsProvider = ({ children }: { children: React.ReactNode }) => 
   </ColumnsCtx.Provider>;
 };
 
-export function useColumns<T extends unknown>(
-  selector: (s: ColumnsStore) => T,
-  equalityFn: (a: T, b: T) => boolean = Object.is,
+export function useColumns(
+  selector: (s: ColumnsStore) => Column[],
+  equalityFn: (a: Column, b: Column) => boolean = Object.is,
 ) {
-  const store = React.useContext(ColumnsCtx)!.store;
-  return useSyncExternalStoreWithSelector(
-    store.subscribe,
-    store.getState,
-    store.getState, // server snapshot
-    selector,
-    equalityFn,
-  );
+  const store = React.useContext(ColumnsCtx)?.store;
+  if (!store) throw new Error('useColumns must be used inside <ColumnsProvider>');
+  return selector(store.getState());
 }
 
 export function useColumnsDispatch() {

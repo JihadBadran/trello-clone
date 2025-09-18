@@ -12,7 +12,7 @@ export async function metaSet<T = unknown>(key: string, value: T): Promise<void>
   await withTx('readwrite', STORES.META, async (tx) => {
     const store = tx.objectStore(STORES.META);
     if (!store) throw new Error('Meta store not found');
-    await store.put(value, key);
+    await store?.put?.(value, key);
   });
 }
 

@@ -1,7 +1,9 @@
 import type { Board } from '@tc/boards/domain';
-import { OutboxItem, PullResult, PushResult } from '@tc/infra/sync-cloud';
+import { PullResult, PushResult } from '@tc/infra/sync-cloud';
+import { OutboxItem } from "@tc/foundation/types";
 
 export interface BoardsRepo {
+  get(id: string): Promise<Board | null>;
   getAll(): Promise<Board[]>;
   upsert(b: Board): Promise<void>;
   remove(id: string): Promise<void>;

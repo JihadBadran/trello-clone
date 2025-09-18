@@ -11,6 +11,6 @@ export type BoardArchived = {
   type: 'BoardArchived';
   v: 1;
   at: string;
-  boardId: string;
-  ownerId: string;
+  board_id: string;
+  owner_id: string;
 };

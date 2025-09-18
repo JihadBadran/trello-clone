@@ -2,7 +2,7 @@ export type CardCreated = {
   type: 'CardCreated';
   v: number;
   at: string;
-  card: { id: string; columnId: string; title: string; position: number };
+  card: { id: string; column_id: string; title: string; position: number };
 };
 
 export type CardMoved = {
@@ -10,7 +10,7 @@ export type CardMoved = {
   v: number;
   at: string;
   id: string;
-  to: { columnId: string; position: number };
+  to: { column_id: string; position: number };
 };
 
 export type CardUpdated = {
