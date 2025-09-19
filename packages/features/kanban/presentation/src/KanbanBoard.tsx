@@ -19,7 +19,7 @@ import { KanbanProvider } from './lib/KanbanProvider';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { KanbanColumn, KanbanHeader } from '@tc/columns/presentation';
 import { KanbanCard, KanbanCards } from '@tc/cards/presentation';
-import { KanbanSquareDashed } from '@tc/uikit/icons';
+import { Columns, Columns2, Columns3, Columns3Cog, KanbanSquareDashed, User } from '@tc/uikit/icons';
 import { Dialog, DialogTitle } from '@radix-ui/react-dialog';
 import { DialogContent, DialogHeader, DialogTrigger } from '@tc/uikit/components/ui/dialog';
 
@@ -94,33 +94,40 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
       {/* board title */}
       <div className="flex items-center justify-between gap-2 px-6">
         <h1 className="text-2xl font-bold flex items-center gap-2">
-          <KanbanSquareDashed className="size-8" />
+          <Columns3 className="size-8" />
           {board.title}
         </h1>
         <div className="flex-shrink-0 gap-3 flex items-center">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="default">Add Column</Button>
-            </SheetTrigger>
-            <SheetContent>
-              <SheetHeader>
-                <SheetTitle>Create Column</SheetTitle>
-              </SheetHeader>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="default">
+                <Columns3Cog className="size-4" />
+                Add Column
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create Column</DialogTitle>
+              </DialogHeader>
               <CreateColumnForm boardId={boardId} />
-            </SheetContent>
-          </Sheet>
+            </DialogContent>
+          </Dialog>
 
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="default">Invite</Button>
-            </SheetTrigger>
-            <SheetContent>
-              <SheetHeader>
-                <SheetTitle>Invite</SheetTitle>
-              </SheetHeader>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="default">
+                <User className="size-4" />
+                Collaborate
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Invite Collaborator</DialogTitle>
+              </DialogHeader>
+
               <InviteMemberForm boardId={boardId} />
-            </SheetContent>
-          </Sheet>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
       <div className="flex flex-1 overflow-auto">

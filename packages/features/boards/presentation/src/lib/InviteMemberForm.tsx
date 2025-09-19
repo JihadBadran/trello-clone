@@ -6,6 +6,7 @@ import { Button } from '@tc/uikit/components/ui/button';
 import { Input } from '@tc/uikit/components/ui/input';
 import { Label } from '@tc/uikit/components/ui/label';
 import { inviteMemberSchema, InviteMemberFormInput, validateEmail, validateUuid } from '@tc/foundation/validation';
+import { Avatar, AvatarFallback, AvatarImage } from '@tc/uikit/components/ui/avatar';
 
 export type InviteMemberFormProps = {
   boardId: string;
@@ -26,17 +27,22 @@ export function InviteMemberForm({ boardId }: InviteMemberFormProps) {
   const query = watch('identifier');
 
   useEffect(() => {
+    // check if email is valid with zod
+    const usingEmail = validateEmail.safeParse(query).success;
+    // check if uuid is valid with zod
+    const isUuid = validateUuid.safeParse(query).success;
+
+    if (!usingEmail && !isUuid) {
+      setResults([]);
+      setIsSearching(false);
+      return;
+    }
     let cancelled = false;
     if (!query || query.trim().length < 2) {
       setResults([]);
       return;
     }
     setIsSearching(true);
-    // check if email is valid with zod
-    const usingEmail = validateEmail.safeParse(query).success;
-
-    // check if uuid is valid with zod
-    const isUuid = validateUuid.safeParse(query).success;
     const t = setTimeout(async () => {
       try {
         let q = supabase
@@ -117,14 +123,20 @@ export function InviteMemberForm({ boardId }: InviteMemberFormProps) {
               <button
                 type="button"
                 key={r.id}
-                className="block w-full text-left px-3 py-2 hover:bg-accent"
+                className="flex items-center gap-2 w-full text-left px-3 py-2 hover:bg-accent"
                 onClick={() => {
                   setValue('identifier', r.id, { shouldValidate: true });
                   setResults([]);
                 }}
               >
-                <div className="text-sm font-medium">{r.email ?? r.full_name ?? r.id}</div>
-                <div className="text-xs text-muted-foreground">{r.id}</div>
+                <Avatar>
+                  <AvatarImage src={r.avatar_url || undefined} />
+                  <AvatarFallback>{r.full_name?.slice(0, 2)}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <div className="text-sm font-medium">{r.email ?? r.full_name ?? r.id}</div>
+                  <div className="text-xs text-muted-foreground">{r.id}</div>
+                </div>
               </button>
             ))}
           </div>
@@ -133,7 +145,7 @@ export function InviteMemberForm({ boardId }: InviteMemberFormProps) {
         <p className="text-xs text-muted-foreground">Select a user from the list or paste their email/ID.</p>
       </div>
 
-      <div className="space-y-1">
+      <div className="flex items-center justify-between gap-3">
         <Label>Role</Label>
         <Controller
           name="role"
