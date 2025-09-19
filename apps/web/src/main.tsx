@@ -21,7 +21,7 @@ declare module '@tanstack/react-router' {
   }
 }
 
-registerSW({ immediate: true, onOfflineReady: () => alert('App is ready to work offline!') })
+registerSW({ immediate: true })
 
 root.render(
   <StrictMode>
