@@ -29,6 +29,10 @@ export default defineConfig(async () => ({
       devOptions: { enabled: true, type: 'module' },   // enables SW in dev (localhost)
       manifest: {
         name: 'Trello',
+        protocol_handlers: [
+          { protocol: 'https', url: '/' },
+        ],
+        display_override: ['standalone', 'minimal-ui'],
         short_name: 'TRLO',
         start_url: '/',
         // scope: '/',
