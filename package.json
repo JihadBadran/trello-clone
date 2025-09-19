@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "license": "MIT",
   "type": "commonjs",
-  "packageManager": "pnpm@9.9.0",
+  "packageManager": "pnpm@9.0.0",
   "scripts": {
     "cloud:types:gen": "pnpm supabase gen types typescript --project-id cwjehwyjpnpvthwqzfek --schema public > packages/infra/supabase/src/types.gen.ts"
   },
