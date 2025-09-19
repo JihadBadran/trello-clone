@@ -37,8 +37,8 @@ export default defineConfig(async () => ({
         background_color: '#0b0f19',
         theme_color: '#0b0f19',
         screenshots: [
-          { src: 'narrow.png', sizes: '192x192', type: 'image/png', form_factor: 'narrow' },
-          { src: 'wide.png', sizes: '512x512', type: 'image/png', form_factor: 'wide' }
+          { src: 'narrow.png', sizes: '2450x1830', type: 'image/png', form_factor: 'narrow' },
+          { src: 'wide.png', sizes: '2450x1830', type: 'image/png', form_factor: 'wide' }
         ],
         icons: [
           { src: '192.png', sizes: '192x192', type: 'image/png' },
