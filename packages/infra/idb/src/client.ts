@@ -17,13 +17,10 @@ export async function withTx<T>(
   stores: StoreName[] | StoreName,
   fn: (tx: IDBPTransaction<TrelloCloneDB, StoreName[], 'readwrite' | 'readonly' | 'versionchange'>) => Promise<T> | T,
 ): Promise<T> {
-  console.log('[sync] withTx', { mode, stores })
   const d = await db();
   const s = Array.isArray(stores) ? stores : [stores];
-  console.log('[sync] withTx', { d, s })
   const tx = d.transaction(s, mode);
   const res = await fn(tx);
-  console.log('[sync] withTx', { res })
   await tx.done;
   return res;
 }

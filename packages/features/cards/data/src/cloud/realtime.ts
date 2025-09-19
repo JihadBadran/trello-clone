@@ -20,5 +20,5 @@ export function subscribeCardRealtime(
     callback,
   );
   ch.subscribe();
-  return () => supabase.removeChannel(ch);
+  return () => ch.unsubscribe();
 }

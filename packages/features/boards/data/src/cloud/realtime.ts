@@ -16,7 +16,7 @@ export function subscribeBoardsRealtime(onChange: Handler) {
     onChange,
   );
   ch.subscribe();
-  return () => supabase.removeChannel(ch);
+  return () => ch.unsubscribe();
 }
 
 export function subscribeBoardRealtime(board_id: string, onChange: Handler) {

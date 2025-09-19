@@ -7,5 +7,5 @@ export function subscribeColumns(board_id: string, onChange: (payload: any) => v
     onChange
   )
   ch.subscribe()
-  return () => supabase.removeChannel(ch)
+  return () => ch.unsubscribe()
 }

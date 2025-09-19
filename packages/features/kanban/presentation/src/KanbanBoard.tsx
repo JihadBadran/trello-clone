@@ -162,7 +162,7 @@ const KanbanBoardInternal = ({ boardId }: { boardId: string }) => {
             <DialogTrigger asChild>
               <Button variant="default">
                 <Columns3Cog className="size-4" />
-                Add Column
+                Column
               </Button>
             </DialogTrigger>
             <DialogContent>
