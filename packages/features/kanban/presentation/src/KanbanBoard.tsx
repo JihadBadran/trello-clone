@@ -1,6 +1,8 @@
+import type { DragEndEvent } from '@dnd-kit/core';
+import { Dialog, DialogTitle } from '@radix-ui/react-dialog';
 import { InviteMemberForm } from '@tc/boards/presentation';
-import { CreateCardForm } from '@tc/cards/presentation';
-import { CreateColumnForm } from '@tc/columns/presentation';
+import { CreateCardForm, KanbanCard, KanbanCards } from '@tc/cards/presentation';
+import { CreateColumnForm, KanbanColumn, KanbanHeader } from '@tc/columns/presentation';
 import {
   useKanbanBoard,
   useKanbanCards,
@@ -8,20 +10,11 @@ import {
   useKanbanDispatch,
 } from '@tc/kanban/application-react';
 import {
-  Button,
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
+  Button
 } from '@tc/uikit';
-import { KanbanProvider } from './lib/KanbanProvider';
-import type { DragEndEvent } from '@dnd-kit/core';
-import { KanbanColumn, KanbanHeader } from '@tc/columns/presentation';
-import { KanbanCard, KanbanCards } from '@tc/cards/presentation';
-import { Columns, Columns2, Columns3, Columns3Cog, KanbanSquareDashed, User } from '@tc/uikit/icons';
-import { Dialog, DialogTitle } from '@radix-ui/react-dialog';
 import { DialogContent, DialogHeader, DialogTrigger } from '@tc/uikit/components/ui/dialog';
+import { Columns3, Columns3Cog, User } from '@tc/uikit/icons';
+import { KanbanProvider } from './lib/KanbanProvider';
 
 // Helper to find the new position of a card after being moved
 const getNewPosition = (

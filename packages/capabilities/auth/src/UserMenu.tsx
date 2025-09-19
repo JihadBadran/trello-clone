@@ -42,11 +42,6 @@ const useUser = () => {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (session?.user?.id) {
-        loadProfile(session.user.id).then((profile) => {
-          setProfile(profile);
-        });
-      }
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -64,12 +59,7 @@ export const UserMenu = ({ onLogout }: { onLogout: () => void }) => {
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
             <AvatarImage src={profile?.avatar_url || ''} alt="@shadcn" />
-            <AvatarFallback>
-              {profile?.full_name
-                ?.split(' ')
-                .map((name) => name[0])
-                .join('') || 'U'}
-            </AvatarFallback>
+            <AvatarFallback>{profile?.full_name?.[0] || 'U'}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
