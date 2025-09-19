@@ -8,7 +8,7 @@
   ],
   "builds": [
     {
-      "src": "index.html",
+      "src": "/dist/apps/web/index.html",
       "use": "@vercel/static"
     }
   ]
