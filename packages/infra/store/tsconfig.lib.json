@@ -1,11 +1,12 @@
 {
-  "extends": "../../../tsconfig.base.json",
+  "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "../../../dist/out-tsc/infra-store",
     "declaration": true,
     "emitDeclarationOnly": false,
-    "composite": false
+    "composite": false,
+    "lib": ["ES2022", "dom"]
   },
-  "include": ["src/**/*.{ts,tsx}"],
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
   "exclude": ["src/**/*.test.*", "src/**/*.spec.*", "vite.config.*", "vitest.config.*"]
 }

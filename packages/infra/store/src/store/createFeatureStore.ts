@@ -1,4 +1,4 @@
-import { createStore, type StoreApi, type StateCreator } from 'zustand';
+import { type StoreApi, type StateCreator, create } from 'zustand';
 import { tabSync } from '@tc/infra/sync-tabs';
 import {
   MultiSyncController,
@@ -44,7 +44,7 @@ export function createFeatureStore<S extends FeatureSlice, C extends FeatureCtx,
   topic,
 }: CreateFeatureStoreOptions<S, C, TEntity, R>) {
 
-  const store = createStore<FeatureStore<S, C>>(
+  const store = create<FeatureStore<S, C>>(
     makeStore({
       publish: (msg: Action) => tabSync.publish({ ...msg, from: tabSync.TAB_ID }),
       tabId: tabSync.TAB_ID,

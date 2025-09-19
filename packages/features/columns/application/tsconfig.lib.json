@@ -1,9 +1,10 @@
 {
-  "extends": "../../../../tsconfig.base.json",
+  "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "../../../dist/out-tsc/columns-application",
     "declaration": true,
-    "types": ["node"]
+    "types": ["node"],
+    "lib": ["ES2022", "dom"]
   },
   "include": ["src/**/*.ts"],
   "exclude": [

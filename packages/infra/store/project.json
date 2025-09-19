@@ -1,11 +1,11 @@
 {
-  "name": "foundation-store",
+  "name": "infra-store",
   "projectType": "library",
-  "sourceRoot": "packages/foundation/store/src",
+  "sourceRoot": "packages/infra/store/src",
   "targets": {
     "lint": {
       "executor": "@nx/eslint:lint"
     }
   },
-  "tags": ["scope:foundation", "type:util"]
+  "tags": ["scope:infra", "type:util"]
 }

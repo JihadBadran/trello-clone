@@ -53,6 +53,9 @@ export default defineConfig(async () => ({
     commonjsOptions: {
       transformMixedEsModules: true,
     },
+    rollupOptions: {
+
+    },
   },
   test: {
     name: '@trello-clone/web',

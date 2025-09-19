@@ -1,7 +1,7 @@
 {
   "name": "boards-data",
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "packages/boards/data/src",
+  "sourceRoot": "packages/features/boards/data/src",
   "projectType": "library",
   "tags": ["scope:data"],
   "// targets": "to see all targets run: nx show project data --web",

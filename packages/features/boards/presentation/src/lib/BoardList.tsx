@@ -3,9 +3,7 @@ import { Link } from '@tanstack/react-router';
 import { Button } from '@tc/uikit/ui/button';
 import { Input } from '@tc/uikit/ui/input';
 import { useBoardsList, useCreateBoard } from '@tc/boards/application-react';
-import { v4 as uuid } from 'uuid';
 import { Card, CardContent, CardHeader, CardTitle } from '@tc/uikit/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@tc/uikit/ui/dialog';
 import { supabase } from '@tc/infra/supabase';
 import BoardsEmptyState from './BoardsEmptyState';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@tc/uikit';
@@ -61,7 +59,7 @@ export function BoardsList() {
       {boards.length === 0 ? <BoardsEmptyState /> : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {boards.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()).map((b) => (
-          <Link key={b.id} params={{ board_id: b.id }} to={`/board/$board_id`}>
+          <Link key={b.id} params={{ boardId: b.id }} to={`/board/$boardId`}>
             <Card>
               <CardHeader>
                 <CardTitle>{b.title}</CardTitle>

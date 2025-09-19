@@ -4,9 +4,9 @@
     "outDir": "../../../../dist/out-tsc/boards-application-react",
     "declaration": true,
     "emitDeclarationOnly": false,
-    "composite": true,
-    "lib": ["ES2022"]
+    // "composite": true,
+    "lib": ["ES2022", "dom"]
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
   "exclude": ["src/**/*.test.*", "src/**/*.spec.*"]
 }

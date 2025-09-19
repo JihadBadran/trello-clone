@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button, Input } from '@tc/uikit';
-import { useKanbanDispatch, useKanbanStore } from '@tc/kanban/application-react';
+import type { Card } from '@tc/cards/domain';
 import { v4 as uuid } from 'uuid';
 
 export type CreateCardFormProps = {
@@ -9,6 +9,8 @@ export type CreateCardFormProps = {
   className?: string;
   placeholder?: string;
   buttonLabel?: string;
+  getNextPosition: () => number;
+  onCreate: (payload: Card) => void | Promise<void>;
 };
 
 export function CreateCardForm({
@@ -17,16 +19,10 @@ export function CreateCardForm({
   className,
   placeholder = 'New card title',
   buttonLabel = 'Create Card',
+  getNextPosition,
+  onCreate,
 }: CreateCardFormProps) {
   const [title, setTitle] = useState('');
-  const dispatch = useKanbanDispatch();
-
-  const nextPosition = useKanbanStore((s) => {
-    const cards = Object.values(s.cards)
-      .filter((c) => c.board_id === boardId && c.column_id === columnId && !c.deleted_at)
-      .sort((a, b) => a.position - b.position);
-    return cards.length > 0 ? cards[cards.length - 1].position + 1024 : 1024;
-  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,16 +35,16 @@ export function CreateCardForm({
       board_id: boardId,
       column_id: columnId,
       title: value,
-      position: nextPosition,
+      position: getNextPosition(),
       created_at: now,
       updated_at: now,
       deleted_at: null as string | null,
       description: null as string | null,
       due_date: null as string | null,
       assignee_id: null as string | null,
-    };
+    } as Card;
 
-    dispatch({ type: 'cards/upsert', payload });
+    onCreate(payload);
     setTitle('');
   };
 
@@ -67,3 +63,4 @@ export function CreateCardForm({
 }
 
 export default CreateCardForm;
+

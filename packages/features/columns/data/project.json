@@ -1,7 +1,7 @@
 {
   "name": "columns-data",
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "packages/columns/data/src",
+  "sourceRoot": "packages/features/columns/data/src",
   "projectType": "library",
   "tags": [],
   "// targets": "to see all targets run: nx show project data --web",

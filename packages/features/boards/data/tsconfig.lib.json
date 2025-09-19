@@ -3,7 +3,8 @@
   "compilerOptions": {
     "outDir": "../../../dist/out-tsc",
     "declaration": true,
-    "types": ["node"]
+    "types": ["node"],
+    "lib": ["ES2022", "dom"]
   },
   "include": ["src/**/*.ts"],
   "exclude": [

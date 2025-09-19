@@ -26,5 +26,25 @@
     "vitest.config.*",
     "eslint.config.*",
     ".storybook/**"
+  ],
+  "references": [
+    {
+      "path": "../../packages/features/boards/presentation"
+    },
+    {
+      "path": "../../packages/features/kanban/presentation"
+    },
+    {
+      "path": "../../packages/infra/supabase"
+    },
+    {
+      "path": "../../packages/capabilities/auth"
+    },
+    {
+      "path": "../../packages/uikit"
+    },
+    {
+      "path": "../../packages/features/kanban/application-react"
+    }
   ]
 }

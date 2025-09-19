@@ -89,6 +89,7 @@
     "@tanstack/router-vite-plugin": "^1.131.44",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "framer-motion": "^12.23.15",
     "idb": "^8.0.3",
     "lucide-react": "^0.544.0",
     "nanoid": "^5.1.5",

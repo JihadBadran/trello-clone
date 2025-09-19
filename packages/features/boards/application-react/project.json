@@ -1,7 +1,7 @@
 {
   "name": "boards-application-react",
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "packages/boards/application-react/src",
+  "sourceRoot": "packages/features/boards/application-react/src",
   "projectType": "library",
   "tags": ["scope:application-react"],
   "// targets": "to see all targets run: nx show project application-react --web",

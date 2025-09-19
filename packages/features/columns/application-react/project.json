@@ -1,7 +1,7 @@
 {
   "name": "columns-application-react",
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "packages/columns/application-react/src",
+  "sourceRoot": "packages/features/columns/application-react/src",
   "projectType": "library",
   "tags": [],
   "// targets": "to see all targets run: nx show project application-react --web",

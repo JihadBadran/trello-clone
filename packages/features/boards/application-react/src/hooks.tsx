@@ -1,5 +1,4 @@
 import React, { useContext, useEffect, useMemo } from 'react';
-import { useSyncExternalStoreWithSelector } from 'use-sync-external-store/with-selector';
 import { shallow } from 'zustand/shallow';
 import { makeBoardsStore, registerBoardsActions, type BoardsStore } from '@tc/boards/application';
 import { BoardsRepoIDB, BoardsRepoSupabase, subscribeBoardsRealtime } from '@tc/boards/data';
@@ -9,7 +8,7 @@ import { v4 as uuid } from 'uuid';
 
 
 type BoardsContext = {
-  store: import('zustand').StoreApi<BoardsStore>;
+  store: import('zustand').UseBoundStore<import('zustand').StoreApi<BoardsStore>>;
   dispatch: (action: { type: string; payload: any; meta?: any }) => Promise<void>;
   isLeader: boolean;
 };
@@ -55,15 +54,12 @@ export function useBoards<T>(
   selector: (s: BoardsStore) => T,
   equalityFn: (a: T, b: T) => boolean = Object.is,
 ) {
-  const store = useContext(BoardsCtx)?.store;
-  if (!store) throw new Error('useBoards must be used inside <BoardsProvider>');
-  return useSyncExternalStoreWithSelector(
-    store.subscribe,
-    store.getState,
-    store.getState, // server snapshot
-    selector,
-    equalityFn,
-  );
+  const storeContext = useContext(BoardsCtx);
+  const state = storeContext?.store((state) => state);
+  if (!storeContext || !state) {
+    throw new Error('useBoards must be used within a KanbanProvider');
+  }
+  return selector(state);
 }
 
 export function useBoardsDispatch() {

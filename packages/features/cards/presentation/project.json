@@ -1,7 +1,7 @@
 {
   "name": "cards-presentation",
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "packages/cards/presentation/src",
+  "sourceRoot": "packages/features/cards/presentation/src",
   "projectType": "library",
   "tags": [],
   "// targets": "to see all targets run: nx show project presentation --web",

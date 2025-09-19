@@ -1,5 +1,4 @@
 import { InviteMemberForm } from '@tc/boards/presentation';
-import type { Card } from '@tc/cards/domain';
 import { CreateCardForm } from '@tc/cards/presentation';
 import { CreateColumnForm } from '@tc/columns/presentation';
 import {
@@ -8,11 +7,21 @@ import {
   useKanbanColumns,
   useKanbanDispatch,
 } from '@tc/kanban/application-react';
-import { Button, Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@tc/uikit';
-import { KanbanProvider, DragEndEvent } from '@tc/kanban/presentation';
+import {
+  Button,
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@tc/uikit';
+import { KanbanProvider } from './lib/KanbanProvider';
+import type { DragEndEvent } from '@dnd-kit/core';
 import { KanbanColumn, KanbanHeader } from '@tc/columns/presentation';
 import { KanbanCard, KanbanCards } from '@tc/cards/presentation';
 import { KanbanSquareDashed } from '@tc/uikit/icons';
+import { Dialog, DialogTitle } from '@radix-ui/react-dialog';
+import { DialogContent, DialogHeader, DialogTrigger } from '@tc/uikit/components/ui/dialog';
 
 // Helper to find the new position of a card after being moved
 const getNewPosition = (
@@ -114,7 +123,7 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
           </Sheet>
         </div>
       </div>
-      <div className='flex flex-1 overflow-auto'>
+      <div className="flex flex-1 overflow-auto">
         <KanbanProvider
           columns={kanbanColumns}
           data={kanbanCards}
@@ -122,14 +131,42 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
         >
           {(col) => {
             return (
-              <KanbanColumn className="flex-grow min-w-[300px]" id={col.id} key={col.id}>
+              <KanbanColumn
+                className="flex-grow min-w-[300px]"
+                id={col.id}
+                key={col.id}
+              >
                 <KanbanHeader>{col.name}</KanbanHeader>
-                <KanbanCards id={col.id} className='flex-1'>
-                  {(card: Card & { name: string; column: string }) => (
+                <KanbanCards items={kanbanCards} columnId={col.id} className="flex-1">
+                  {(card) => (
                     <KanbanCard {...card} name={card.name} key={card.id} />
                   )}
                 </KanbanCards>
-                <CreateCardForm boardId={boardId} columnId={col.id} />
+                <Dialog>
+                  <DialogTrigger className='m-3 hover:bg-accent p-3 border border-primary border-dashed rounded'>New Task</DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>New Task</DialogTitle>
+                    </DialogHeader>
+                    <CreateCardForm
+                      boardId={boardId}
+                      columnId={col.id}
+                      getNextPosition={() => {
+                        const cardsInCol = cards
+                          .filter(
+                            (c) => c.column_id === col.id && !c.deleted_at
+                          )
+                          .sort((a, b) => a.position - b.position);
+                        return cardsInCol.length > 0
+                          ? cardsInCol[cardsInCol.length - 1].position + 1024
+                          : 1024;
+                      }}
+                      onCreate={(payload) =>
+                        dispatch({ type: 'cards/upsert', payload })
+                      }
+                    />
+                  </DialogContent>
+                </Dialog>
               </KanbanColumn>
             );
           }}

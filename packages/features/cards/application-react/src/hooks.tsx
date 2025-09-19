@@ -1,5 +1,4 @@
 import React, { useContext, useEffect, useMemo } from 'react';
-import { useSyncExternalStoreWithSelector } from 'use-sync-external-store/with-selector';
 import { makeCardsStore, registerCardsActions, type CardsStore } from '@tc/cards/application';
 import { CardsRepoIDB, CardsRepoSupabase } from '@tc/cards/data';
 import { createFeatureStore } from '@tc/infra/store';
@@ -39,13 +38,7 @@ export function useCards<T>(
 ) {
   const store = React.useContext(CardsCtx)?.store;
   if (!store) throw new Error('useCards must be used inside <CardsProvider>');
-  return useSyncExternalStoreWithSelector(
-    store.subscribe,
-    store.getState,
-    store.getState, // server snapshot
-    selector,
-    equalityFn,
-  );
+  return store;
 }
 
 export function useCardsDispatch() {

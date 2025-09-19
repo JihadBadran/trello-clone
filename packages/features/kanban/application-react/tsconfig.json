@@ -3,7 +3,6 @@
   "compilerOptions": {
     "jsx": "react-jsx",
     "allowJs": false,
-    "lib": ["es2022", "DOM"],
     "esModuleInterop": false,
     "allowSyntheticDefaultImports": true,
     "strict": true,

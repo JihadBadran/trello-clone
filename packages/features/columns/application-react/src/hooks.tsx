@@ -1,5 +1,4 @@
 import React, { useContext, useEffect, useMemo } from 'react';
-import { useSyncExternalStoreWithSelector } from 'use-sync-external-store/with-selector';
 import { makeColumnsStore, registerColumnsActions, type ColumnsStore } from '@tc/columns/application';
 import { ColumnsRepoIDB, ColumnsRepoSupabase } from '@tc/columns/data';
 import { createFeatureStore } from '@tc/infra/store';

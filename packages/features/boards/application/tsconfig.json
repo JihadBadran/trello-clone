@@ -1,9 +1,9 @@
 {
-  "extends": "./tsconfig.lib.json",
+  "extends": "../../../../tsconfig.base.json",
   "compilerOptions": {
     "noEmit": true
   },
-  "include": ["src/**/*.ts", "../data/src/ports.ts"],
+  "include": ["src/**/*.ts"],
   "exclude": [
     "src/**/*.test.*",
     "src/**/*.spec.*",

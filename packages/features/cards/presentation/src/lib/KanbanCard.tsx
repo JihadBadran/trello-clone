@@ -1,20 +1,31 @@
 'use client';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { KanbanContext, KanbanContextProps, KanbanItemProps } from '@tc/kanban/presentation';
-import { Card } from '@tc/uikit/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@tc/uikit/components/ui/card';
 import { ScrollArea } from '@tc/uikit/components/ui/scroll-area';
 import { ScrollBar } from '@tc/uikit/components/ui/scroll-area';
 import { cn } from '@tc/uikit/lib/utils';
-import { HTMLAttributes, ReactNode, useContext } from 'react';
+import { HTMLAttributes, ReactNode } from 'react';
 import { SortableContext } from '@dnd-kit/sortable';
+import { motion } from 'framer-motion';
 
-export type KanbanCardProps<T extends KanbanItemProps = KanbanItemProps> = T & {
+type KanbanItemBase = {
+  id: string;
+  name: string;
+  column: string;
+} & Record<string, unknown>;
+
+export type KanbanCardProps<T extends KanbanItemBase = KanbanItemBase> = T & {
   children?: ReactNode;
   className?: string;
 };
 
-export const KanbanCard = <T extends KanbanItemProps = KanbanItemProps>({
+export const KanbanCard = <T extends KanbanItemBase = KanbanItemBase>({
   id,
   name,
   children,
@@ -24,7 +35,7 @@ export const KanbanCard = <T extends KanbanItemProps = KanbanItemProps>({
     attributes,
     listeners,
     setNodeRef,
-    transition,
+    // transition,
     transform,
     isDragging,
   } = useSortable({
@@ -32,45 +43,61 @@ export const KanbanCard = <T extends KanbanItemProps = KanbanItemProps>({
   });
 
   const style = {
-    transition,
+    // transition,
     transform: CSS.Transform.toString(transform),
   };
 
   return (
-    <div style={style} {...listeners} {...attributes} ref={setNodeRef}>
+    <motion.div
+      initial={{ opacity: 0, y: 20, scale: 0.9 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -20, scale: 0.9 }}
+      transition={{ duration: 0.3, ease: 'easeInOut' }}
+      style={style}
+      {...listeners}
+      {...attributes}
+      ref={setNodeRef}
+    >
       <Card
         className={cn(
-          'cursor-grab gap-4 rounded-md p-3 shadow-sm',
-          isDragging && 'pointer-events-none cursor-grabbing opacity-30',
-          className
+          'cursor-grab gap-4 rounded-md shadow-sm',
+          isDragging && 'pointer-events-none cursor-grabbing opacity-30'
+          // className
         )}
       >
-        {children ?? <p className="m-0 font-medium text-sm">{name}</p>}
+        <CardHeader className="flex gap-2 items-center">
+          <CardTitle>{name}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {children}
+        </CardContent>
       </Card>
-    </div>
+    </motion.div>
   );
 };
 
-export type KanbanCardsProps<T extends KanbanItemProps = KanbanItemProps> =
-  Omit<HTMLAttributes<HTMLDivElement>, 'children' | 'id'> & {
+export type KanbanCardsProps<T extends KanbanItemBase = KanbanItemBase> =
+  Omit<HTMLAttributes<HTMLDivElement>, 'children'> & {
     children: (item: T) => ReactNode;
-    id: string;
+    items: T[];
+    columnId: string;
   };
 
-export const KanbanCards = <T extends KanbanItemProps = KanbanItemProps>({
+export const KanbanCards = <T extends KanbanItemBase = KanbanItemBase>({
   children,
   className,
-  ...props
+  items,
+  columnId,
+  ...rest
 }: KanbanCardsProps<T>) => {
-  const { data } = useContext(KanbanContext) as KanbanContextProps<T>;
-  const filteredData = data.filter((item) => item.column === props.id);
-  const items = filteredData.map((item) => item.id);
+  const filteredData = items.filter((item) => item.column === columnId);
+  const sortableIds = filteredData.map((item) => item.id);
   return (
     <ScrollArea className="overflow-hidden flex-1">
-      <SortableContext items={items}>
+      <SortableContext items={sortableIds}>
         <div
           className={cn('flex flex-grow flex-col gap-2 p-2', className)}
-          {...props}
+          {...rest}
         >
           {filteredData.map(children)}
         </div>

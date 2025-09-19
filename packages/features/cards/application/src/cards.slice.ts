@@ -1,6 +1,13 @@
 import type { StateCreator } from 'zustand';
-import { compareLww } from '@tc/foundation/utils';
+import { compareLww as compareLwwCamelCase } from '@tc/foundation/utils';
 import type { Card } from '@tc/cards/domain';
+
+// Normalize LWW compare to use `updated_at` from Card
+const compareLww = (a: Card, b: Card) =>
+  compareLwwCamelCase(
+    { ...a, updatedAt: a?.updated_at },
+    { ...b, updatedAt: b?.updated_at },
+  );
 
 export type CardsSlice = {
   cards: Record<string, Card>;

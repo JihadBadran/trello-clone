@@ -18,6 +18,7 @@
     "lib": ["ES2022"],
     "baseUrl": ".",
     "paths": {
+      "@tc/auth": ["packages/capabilities/auth/src/index.tsx"],
       "@tc/boards/application": [
         "packages/features/boards/application/src/index.ts"
       ],
@@ -54,7 +55,9 @@
       "@tc/foundation/actions": ["packages/foundation/actions/src/index.ts"],
       "@tc/foundation/types": ["packages/foundation/types/src/index.ts"],
       "@tc/foundation/utils": ["packages/foundation/utils/src/index.ts"],
-      "@tc/foundation/validation": ["packages/foundation/validation/src/index.ts"],
+      "@tc/foundation/validation": [
+        "packages/foundation/validation/src/index.ts"
+      ],
       "@tc/infra/idb": ["packages/infra/idb/src/index.ts"],
       "@tc/infra/store": ["packages/infra/store/src/index.ts"],
       "@tc/infra/supabase": ["packages/infra/supabase/src/index.ts"],
@@ -72,11 +75,10 @@
       "@tc/uikit": ["packages/uikit/src/index.ts"],
       "@tc/uikit/components/*": ["packages/uikit/src/components/*"],
       "@tc/uikit/hooks/*": ["packages/uikit/src/hooks/*"],
+      "@tc/uikit/icons": ["packages/uikit/src/icons/index.tsx"],
       "@tc/uikit/lib/*": ["packages/uikit/src/lib/*"],
       "@tc/uikit/tailwind-preset": ["packages/uikit/tailwind-preset.ts"],
-      "@tc/uikit/ui/*": ["packages/uikit/src/components/ui/*"],
-      "@tc/uikit/icons": ["packages/uikit/src/icons/index.tsx"],
-      "@tc/auth": ["packages/capabilities/auth/src/index.tsx"],
+      "@tc/uikit/ui/*": ["packages/uikit/src/components/ui/*"]
     }
   },
   "exclude": ["node_modules", "dist", "out-tsc", "tmp"]

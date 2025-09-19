@@ -1,5 +1,5 @@
 {
-  "name": "presentation",
+  "name": "kanban-presentation",
   "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "packages/features/kanban/presentation/src",
   "projectType": "library",

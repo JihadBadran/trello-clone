@@ -1,11 +1,11 @@
 {
-  "extends": "../../../../tsconfig.base.json",
+  "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "../../../../dist/out-tsc/boards-application",
     "declaration": true,
     "emitDeclarationOnly": false,
     "composite": false,
-    "lib": ["ES2022"]
+    "lib": ["ES2022", "dom"]
   },
   "include": ["src/**/*.ts"],
   "exclude": [

@@ -5,7 +5,7 @@ import { Column } from './entities/column';
 
 export interface ColumnsRepo {
   get(id: string): Promise<Column | null>;
-  getAll(boardId: string): Promise<Column[]>;
+  getAll(): Promise<Column[]>;
   upsert(column: Column): Promise<void>;
   remove(id: string): Promise<void>;
   push(batch: OutboxItem<Column>[]): Promise<PushResult>;
