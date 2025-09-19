@@ -8,7 +8,7 @@ import { Button } from '@tc/uikit/components/ui/button';
 const BoardPage = () => {
   const { boardId } = Route.useParams();
   return (
-    <div className="flex-1 flex-col">
+    <div className="flex flex-1 flex-col">
       <Link to="/boards" className='text-primary flex items-center mx-6'>
         <Button variant={"link"} className='justify-start w-full px-0'><ArrowLeft /> Back to boards</Button>
       </Link>

@@ -33,6 +33,7 @@ export default defineConfig(async () => ({
         start_url: '/',
         // scope: '/',
         display: 'standalone',
+        id: 'tc-kanban',
         background_color: '#0b0f19',
         theme_color: '#0b0f19',
         icons: [

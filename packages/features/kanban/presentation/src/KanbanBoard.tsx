@@ -90,7 +90,7 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
   }));
 
   return (
-    <div className="flex flex-col h-full gap-6">
+    <div className="flex flex-col flex-1 gap-6">
       {/* board title */}
       <div className="flex items-center justify-between gap-2 px-6">
         <h1 className="text-2xl font-bold flex items-center gap-2">
