@@ -40,6 +40,8 @@ export function createTabLeader(namespace = 'tc-leader'): TabLeader {
     leader = v
     console.log('[tab-election] notify', { leader, listeners })
     for (const fn of listeners) fn(v)
+    // we need to remove listeners on change to prevent memory leaks
+    listeners.clear()
   }
 
   // Run the election loop; re-run after deposition unless destroyed.
@@ -69,10 +71,9 @@ export function createTabLeader(namespace = 'tc-leader'): TabLeader {
     onLeaderChange(fn) {
       listeners.add(fn)
       console.log('[tab-election] onLeaderChange', { listeners })
-      // emit current state immediately so callers are consistent
-      try { fn(leader) } catch (e) { console.warn('[tab-election] listener threw on immediate emit', e) }
-      // return real unsubscribe
-      return () => { listeners.delete(fn) }
+      // // emit current state immediately so callers are consistent
+      // fn(leader)
+      return () => {}
     },
     destroy() {
       closed = true

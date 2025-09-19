@@ -3,15 +3,16 @@ import { enqueue } from '@tc/infra/idb';
 import type { Board } from '@tc/boards/domain';
 import { BoardsRepo } from '../ports';
 import { OutboxItem } from '@tc/foundation/types';
-import { PushResult } from '@tc/infra/sync-cloud';
+import { PushResult, PullResult } from '@tc/infra/sync-cloud';
 
 export const BoardsRepoIDB: BoardsRepo = {
   async get(id: string): Promise<Board | null> {
     const row = await idbGet(STORES.BOARDS, id);
     return row ? (row as Board) : null;
   },
-  async getAll(): Promise<Board[]> {
-    return await getAll(STORES.BOARDS);
+  async getAll(): Promise<PullResult<Board>> {
+    const rows = await getAll(STORES.BOARDS);
+    return { ok: true, rows };
   },
   async upsert(b: Board) {
     await put(STORES.BOARDS, b);

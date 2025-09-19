@@ -21,7 +21,7 @@ import { CardsRepoIDB } from '@tc/cards/data';
 import { BoardsSlice } from '@tc/boards/domain';
 
 // 1. The Combined State Shape
-export type KanbanState = BoardsSlice & ColumnsSlice & CardsSlice;
+export type KanbanState = BoardsSlice & ColumnsSlice & CardsSlice & { hydrated: boolean; setHydrated: (hydrated: boolean) => void; };
 
 // 2. The Combined Context for Actions
 export type KanbanCtx = {
@@ -40,7 +40,9 @@ export type KanbanStore = KanbanState & SliceActionsApi<KanbanCtx>;
 
 // 4. The Combined Slice Creator
 const createKanbanSlice: StateCreator<KanbanStore, [], []> = (set, get, api) => ({
-  ...createBoardsSlice(set, get, api) as any,
+  hydrated: false,
+  setHydrated: (hydrated: boolean) => set({ hydrated }),
+    ...(createBoardsSlice(set, get, api) as any),
   ...createColumnsSlice(set, get, api) as any,
   ...createCardsSlice(set, get, api) as any,
 });

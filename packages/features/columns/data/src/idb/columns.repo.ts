@@ -1,7 +1,7 @@
 import { STORES, getAll, put, del, get as idbGet } from '@tc/infra/idb';
 import { enqueue } from '@tc/infra/idb';
 import type { Column, ColumnsRepo } from '@tc/columns/domain';
-import { PushResult } from '@tc/infra/sync-cloud';
+import { PushResult, PullResult } from '@tc/infra/sync-cloud';
 import { OutboxItem } from "@tc/foundation/types";
 
 export const ColumnsRepoIDB: ColumnsRepo = {
@@ -9,8 +9,9 @@ export const ColumnsRepoIDB: ColumnsRepo = {
     const col = await idbGet(STORES.COLUMNS, id);
     return col ? (col as Column) : null;
   },
-  async getAll(): Promise<Column[]> {
-    return await getAll(STORES.COLUMNS);
+  async getAll(): Promise<PullResult<Column>> {
+    const rows = await getAll(STORES.COLUMNS);
+    return { ok: true, rows };
   },
   async upsert(c: Column) {
     await put(STORES.COLUMNS, c);

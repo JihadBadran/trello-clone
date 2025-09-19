@@ -14,13 +14,16 @@ export const BoardsRepoSupabase: BoardsRepo = {
     if (error) throw error;
     return data;
   },
-  async getAll() {
+  async getAll(): Promise<PullResult<Board>> {
     const { data, error } = await supabase
       .from('boards')
       .select('*')
       .order('updated_at', { ascending: false });
-    if (error) throw error;
-    return data?.map((b) => ({ ...b, updatedAt: b.updated_at })) ?? [];
+    if (error) {
+      return { ok: false, error };
+    }
+    const rows = data ?? [];
+    return { ok: true, rows };
   },
   async upsert(b: Board) {
     const { error } = await supabase.from('boards').upsert({

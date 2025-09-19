@@ -64,10 +64,13 @@ export class MultiSyncController {
   }
 
   /** Start periodic sync */
-  start(initialDelayMs?: Millis) {
+  async start(initialDelayMs?: Millis) {
     console.log('[sync] start', { initialDelayMs })
     if (this.running) return
     this.running = true
+
+    await this.bootstrap();
+
     const delay = typeof initialDelayMs === 'number' ? initialDelayMs : 0
     this.queueNext(delay)
   }
@@ -257,8 +260,10 @@ export class MultiSyncController {
       const rows = res.rows ?? []
       if (!rows.length) {
         // advance cursor if cloud told us a newer one explicitly
-        if (res.cursor) await this.cursor.set(ch.topic, res.cursor)
-        return
+        if (res.cursor) {
+          await this.cursor.set(ch.topic, res.cursor);
+        }
+        return;
       }
 
       // apply rows (LWW is done inside local repo)
@@ -267,29 +272,61 @@ export class MultiSyncController {
       }
 
       // advance cursor: prefer server-provided cursor; otherwise use max(updatedAt)
+      let newCursor: ISODateTime | null | undefined = null;
       if (res.cursor) {
-        cursor = res.cursor
-        await this.cursor.set(ch.topic, cursor)
+        newCursor = res.cursor;
       } else {
-        const maxUpdatedAt = this.pickMaxUpdatedAt(rows) ?? cursor
+        const maxUpdatedAt = this.pickMaxUpdatedAt(rows) ?? cursor;
         if (maxUpdatedAt && maxUpdatedAt !== cursor) {
-          cursor = maxUpdatedAt
-          await this.cursor.set(ch.topic, cursor)
+          newCursor = maxUpdatedAt;
         }
       }
 
+      if (newCursor) {
+        cursor = newCursor;
+        await this.cursor.set(ch.topic, cursor);
+      }
+
       // if we got a full page, loop to get more; otherwise we’re done
-      if (rows.length < this.pullBatchSize) return
+      if (rows.length < this.pullBatchSize) return;
     }
   }
 
-  private pickMaxUpdatedAt(rows: any[]): ISODateTime | null {
-    let max: ISODateTime | null = null
+  private pickMaxUpdatedAt(rows: unknown[]): ISODateTime | null {
+    let max: ISODateTime | null = null;
     for (const r of rows) {
-      const ts: ISODateTime | undefined = r.updated_at ?? r.updatedAt
-      if (!ts) continue
-      if (!max || ts > max) max = ts
+      if (r && typeof r === 'object' && ('updated_at' in r || 'updatedAt' in r)) {
+        const ts = (r as { updated_at?: ISODateTime; updatedAt?: ISODateTime }).updated_at ?? (r as { updated_at?: ISODateTime; updatedAt?: ISODateTime }).updatedAt;
+        if (!ts) continue;
+        if (!max || ts > max) max = ts;
+      }
     }
-    return max
+    return max;
+  }
+
+  private async bootstrap() {
+    this.log('[sync] bootstrapping...');
+    // Check if any outbox has items. If so, we don't need to bootstrap.
+    const outboxCounts = await Promise.all(this.channels.map(c => this.outbox.readNextBatch(c.topic, 1)));
+    const hasPendingWrites = outboxCounts.some(items => items.length > 0);
+
+    if (hasPendingWrites) {
+      this.log('[sync] outbox not empty, skipping bootstrap');
+      return;
+    }
+
+    this.log('[sync] outbox is empty, pulling all data from cloud');
+    await Promise.all(this.channels.map(async (ch) => {
+      const res = await ch.cloud.getAll();
+      if (res.ok && res.rows) {
+        for (const row of res.rows) {
+          await ch.local.applyFromCloud(row);
+        }
+        if (res.cursor) {
+          await this.cursor.set(ch.topic, res.cursor);
+        }
+      }
+    }));
+    this.log('[sync] bootstrap complete');
   }
 }

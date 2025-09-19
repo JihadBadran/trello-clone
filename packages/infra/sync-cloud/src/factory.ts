@@ -15,6 +15,7 @@ class MultiTopicIdbCursor implements CursorApi {
 export type SyncConfig = {
   channels: Record<string, ChannelConfig>;
   pollInterval?: number;
+  onInitialPullComplete?: () => void;
 };
 
 /**

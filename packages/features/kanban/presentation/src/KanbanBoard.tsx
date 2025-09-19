@@ -4,10 +4,12 @@ import { InviteMemberForm } from '@tc/boards/presentation';
 import { CreateCardForm, KanbanCard, KanbanCards } from '@tc/cards/presentation';
 import { CreateColumnForm, KanbanColumn, KanbanHeader } from '@tc/columns/presentation';
 import {
+  KanbanProvider as StateKanbanProvider,
   useKanbanBoard,
   useKanbanCards,
   useKanbanColumns,
   useKanbanDispatch,
+  useKanbanStore,
 } from '@tc/kanban/application-react';
 import {
   Button
@@ -34,9 +36,10 @@ const getNewPosition = (
   return (prevCard.position + nextCard.position) / 2;
 };
 
-export function KanbanBoard({ boardId }: { boardId: string }) {
+const KanbanBoardInternal = ({ boardId }: { boardId: string }) => {
   const dispatch = useKanbanDispatch();
 
+    const hydrated = useKanbanStore(s => s.hydrated);
   const board = useKanbanBoard(boardId);
   const cols = useKanbanColumns(boardId);
   const cards = useKanbanCards(boardId);
@@ -73,7 +76,7 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
     });
   };
 
-  if (!board) return <div>Loading board…</div>;
+    if (!hydrated || !board) return <div>Loading board…</div>;
 
   const kanbanColumns = cols.map((c) => ({ id: c.id, name: c.title }));
   const kanbanCards = cards.map((c) => ({
@@ -175,3 +178,11 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
     </div>
   );
 }
+
+export const KanbanBoard = ({ boardId }: { boardId: string }) => {
+  return (
+    <StateKanbanProvider>
+      <KanbanBoardInternal boardId={boardId} />
+    </StateKanbanProvider>
+  );
+};

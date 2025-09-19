@@ -1,14 +1,15 @@
-import { type StoreApi, type StateCreator, create } from 'zustand';
-import { tabSync } from '@tc/infra/sync-tabs';
+import { Action } from '@tc/foundation/actions';
+import { FeatureRepo } from '@tc/foundation/types';
+import { IdbOutbox, getCursor, setCursor } from '@tc/infra/idb';
 import {
   MultiSyncController,
-  type LocalRepo,
-  type CloudRepo,
   type ChannelConfig,
+  type CloudRepo,
+  type LocalRepo,
 } from '@tc/infra/sync-cloud';
-import { IdbOutbox, getCursor, setCursor } from '@tc/infra/idb';
+import { tabSync } from '@tc/infra/sync-tabs';
+import { create, type StateCreator, type StoreApi } from 'zustand';
 import { type SliceActionsApi } from './withActionsSlice';
-import { Action } from '@tc/foundation/actions';
 
 // Define a repository that is guaranteed to have a `getAll` method for hydration.
 export type HydratableRepo<T> = LocalRepo & { getAll: () => Promise<T[]> };
@@ -26,7 +27,7 @@ type MakeStore<S extends FeatureSlice, C extends FeatureCtx> = (
 ) => StateCreator<FeatureStore<S, C>, [], [], FeatureStore<S, C>>;
 
 // The configuration for creating a feature store
-type CreateFeatureStoreOptions<S extends FeatureSlice, C extends FeatureCtx, TEntity, R extends HydratableRepo<TEntity>> = {
+type CreateFeatureStoreOptions<S extends FeatureSlice, C extends FeatureCtx, TEntity, R extends FeatureRepo<TEntity>> = {
   makeStore: MakeStore<S, C>;
   registerActions: (store: StoreApi<FeatureStore<S, C>>) => void;
   localRepo: R;
@@ -35,7 +36,7 @@ type CreateFeatureStoreOptions<S extends FeatureSlice, C extends FeatureCtx, TEn
   topic: string;
 };
 
-export function createFeatureStore<S extends FeatureSlice, C extends FeatureCtx, TEntity, R extends HydratableRepo<TEntity>>({
+export function createFeatureStore<S extends FeatureSlice, C extends FeatureCtx, TEntity, R extends FeatureRepo<TEntity>>({
   makeStore,
   registerActions,
   localRepo,

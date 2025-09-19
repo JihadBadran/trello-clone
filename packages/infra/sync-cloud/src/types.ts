@@ -14,7 +14,7 @@ export type PushResult = {
   ackIds?: string[]       // which outbox ids were accepted by cloud
 }
 
-export type PullResult<T = any> = {
+export type PullResult<T = unknown> = {
   ok: boolean
   transient?: boolean
   error?: unknown
@@ -24,7 +24,7 @@ export type PullResult<T = any> = {
 
 export interface LocalRepo {
   /** Apply a cloud row into local store (IDB). Should be idempotent + LWW. */
-  applyFromCloud(row: any): Promise<void>
+  applyFromCloud(row: unknown): Promise<void>
 }
 
 export interface CloudRepo {
@@ -32,6 +32,8 @@ export interface CloudRepo {
   push(items: OutboxItem[]): Promise<PushResult>
   /** Pull rows changed since cursor (inclusive/exclusive is up to impl). */
   pullSince(since: ISODateTime | null, limit: number): Promise<PullResult>
+  /** Pull all rows for a topic. */
+  getAll(): Promise<PullResult>
 }
 
 export interface OutboxApi {
@@ -75,5 +77,5 @@ export type ControllerConfig = {
   /** jitter ratio 0..1 (default 0.2) */
   jitter?: number
   /** optional logger */
-  log?: (msg: string, data?: any) => void
+  log?: (msg: string, data?: unknown) => void
 }

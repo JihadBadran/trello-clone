@@ -14,13 +14,16 @@ export const CardsRepoSupabase: CardsRepo = {
     if (error) throw error;
     return data;
   },
-  async getAll() {
+  async getAll(): Promise<PullResult<Card>> {
     const { data, error } = await supabase
       .from('cards')
       .select('*')
       .order('updated_at', { ascending: false });
-    if (error) throw error;
-    return data ?? [];
+    if (error) {
+      return { ok: false, error };
+    }
+    const rows = data ?? [];
+    return { ok: true, rows };
   },
   async upsert(c: Card) {
     const { error } = await supabase.from('cards').upsert(c);

@@ -13,13 +13,16 @@ export const ColumnsRepoSupabase: ColumnsRepo = {
     if (error) throw error;
     return data;
   },
-  async getAll() {
+  async getAll(): Promise<PullResult<Column>> {
     const { data, error } = await supabase
       .from('columns')
       .select('*')
       .order('updated_at', { ascending: false });
-    if (error) throw error;
-    return data?.map(c => ({...c, board_id: c.board_id, createdAt: c.created_at, updatedAt: c.updated_at, deletedAt: c.deleted_at})) ?? [];
+    if (error) {
+      return { ok: false, error };
+    }
+    const rows = data?.map(c => ({...c, board_id: c.board_id, createdAt: c.created_at, updatedAt: c.updated_at, deletedAt: c.deleted_at})) ?? [];
+    return { ok: true, rows };
   },
   async upsert(c: Column) {
     const { error } = await supabase.from('columns').upsert({
