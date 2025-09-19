@@ -36,6 +36,10 @@ export default defineConfig(async () => ({
         id: 'tc-kanban',
         background_color: '#0b0f19',
         theme_color: '#0b0f19',
+        screenshots: [
+          { src: 'narrow.png', sizes: '192x192', type: 'image/png', form_factor: 'narrow' },
+          { src: 'wide.png', sizes: '512x512', type: 'image/png', form_factor: 'wide' }
+        ],
         icons: [
           { src: '192.png', sizes: '192x192', type: 'image/png' },
           { src: '512.png', sizes: '512x512', type: 'image/png' }
