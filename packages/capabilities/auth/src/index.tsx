@@ -16,6 +16,7 @@ export const AuthPage = () => (
         supabaseClient={supabase}
         appearance={{ theme: ThemeSupa }}
         providers={[]}
+        redirectTo='/'
         queryParams={{
           access_type: 'offline',
           prompt: 'consent',
