@@ -6,6 +6,9 @@
   "scripts": {
     "cloud:types:gen": "pnpm supabase gen types typescript --project-id cwjehwyjpnpvthwqzfek --schema public > packages/infra/supabase/src/types.gen.ts"
   },
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "private": true,
   "devDependencies": {
     "@babel/core": "^7.14.5",
