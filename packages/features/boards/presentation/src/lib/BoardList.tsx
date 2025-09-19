@@ -4,7 +4,6 @@ import { Button } from '@tc/uikit/ui/button';
 import { Input } from '@tc/uikit/ui/input';
 import { useBoardsList, useCreateBoard } from '@tc/boards/application-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@tc/uikit/ui/card';
-import { supabase } from '@tc/infra/supabase';
 import BoardsEmptyState from './BoardsEmptyState';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@tc/uikit';
 
@@ -18,10 +17,8 @@ export function BoardsList() {
   async function onCreate() {
     if (!title.trim()) return;
     // get user uid with supabase
-    const { data: user } = await supabase.auth.getUser();
     createBoard({
       title,
-      owner_id: user?.user?.id ?? '',
     });
     setTitle('');
     setOpen(false);

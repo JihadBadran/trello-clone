@@ -1,7 +1,11 @@
 'use client';
 import { useDroppable } from '@dnd-kit/core';
 import { cn } from '@tc/uikit';
-import { HTMLAttributes, ReactNode } from 'react';
+import { HTMLAttributes, ReactNode, useState } from 'react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, Dialog, DialogContent, DialogHeader, DialogTitle, Input, Button } from '@tc/uikit';
+import { MoreHorizontal } from 'lucide-react';
+import { Column } from '@tc/columns/domain';
+import { Action } from '@tc/foundation/actions';
 
 export type KanbanBoardProps = {
   id: string;
@@ -27,8 +31,70 @@ export const KanbanColumn = ({ id, children, className }: KanbanBoardProps) => {
   );
 };
 
-export type KanbanHeaderProps = HTMLAttributes<HTMLDivElement>;
+export type KanbanHeaderProps = HTMLAttributes<HTMLDivElement> & {
+  children: ReactNode;
+  boardId: string;
+  column: Column;
+  columns: Column[];
+  dispatch: (action: Action) => void;
+};
 
-export const KanbanHeader = ({ className, ...props }: KanbanHeaderProps) => (
-  <div className={cn('m-0 font-semibold text-sm p-6 border-0', className)} {...props} />
-);
+export const KanbanHeader = ({ children, boardId, column, columns, dispatch, className, ...props }: KanbanHeaderProps) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [newTitle, setNewTitle] = useState(column.title);
+
+  const handleMove = (direction: 'left' | 'right') => {
+    const sortedColumns = [...columns].sort((a, b) => a.position - b.position);
+    const currentIndex = sortedColumns.findIndex(c => c.id === column.id);
+    const newIndex = direction === 'left' ? currentIndex - 1 : currentIndex + 1;
+
+    if (newIndex < 0 || newIndex >= sortedColumns.length) return;
+
+    const newPosition = (sortedColumns[newIndex].position + (sortedColumns[newIndex + (direction === 'left' ? 1 : -1)]?.position || sortedColumns[newIndex].position + (direction === 'left' ? -1024 : 1024))) / 2;
+
+    dispatch({
+      type: 'columns/resequence',
+      payload: {
+        boardId,
+        columnId: column.id,
+        newPosition,
+      },
+    });
+  };
+
+  const handleUpdateTitle = () => {
+    dispatch({
+      type: 'columns/updateTitle',
+      payload: {
+        id: column.id,
+        title: newTitle,
+      },
+    });
+    setIsEditing(false);
+  };
+
+  return (
+    <div className={cn('m-0 font-semibold text-sm p-3 border-0 flex justify-between items-center', className)} {...props}>
+      {children}
+      <DropdownMenu>
+        <DropdownMenuTrigger>
+          <MoreHorizontal className="h-4 w-4" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem onSelect={() => handleMove('left')}>Move Left</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => handleMove('right')}>Move Right</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => setIsEditing(true)}>Edit</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <Dialog open={isEditing} onOpenChange={setIsEditing}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Column</DialogTitle>
+          </DialogHeader>
+          <Input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} />
+          <Button onClick={handleUpdateTitle}>Save</Button>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};

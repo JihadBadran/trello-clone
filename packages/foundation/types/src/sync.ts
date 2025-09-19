@@ -11,6 +11,7 @@ export type OutboxItem<T = unknown> = {
 };
 
 export interface FeatureRepo<T> {
+  onApply?: (item: T) => void;
   get(id: string): Promise<T | null>;
   getAll(): Promise<PullResult<T>>;
   upsert(item: T): Promise<void>;

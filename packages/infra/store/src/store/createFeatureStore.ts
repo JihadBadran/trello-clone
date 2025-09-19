@@ -34,6 +34,7 @@ type CreateFeatureStoreOptions<S extends FeatureSlice, C extends FeatureCtx, TEn
   cloudRepo: CloudRepo;
   hydrateFnName: keyof S;
   topic: string;
+  onApply?: (store: StoreApi<FeatureStore<S, C>>) => (item: TEntity) => void;
 };
 
 export function createFeatureStore<S extends FeatureSlice, C extends FeatureCtx, TEntity, R extends FeatureRepo<TEntity>>({
@@ -43,6 +44,7 @@ export function createFeatureStore<S extends FeatureSlice, C extends FeatureCtx,
   cloudRepo,
   hydrateFnName,
   topic,
+  onApply,
 }: CreateFeatureStoreOptions<S, C, TEntity, R>) {
 
   const store = create<FeatureStore<S, C>>(
@@ -54,6 +56,10 @@ export function createFeatureStore<S extends FeatureSlice, C extends FeatureCtx,
   );
 
   registerActions(store);
+
+  if (onApply) {
+    localRepo.onApply = onApply(store);
+  }
 
   const unsubBus = tabSync.subscribe(async (action) => {
     // Ignore actions from this tab or actions not relevant to this feature's topic
@@ -67,7 +73,9 @@ export function createFeatureStore<S extends FeatureSlice, C extends FeatureCtx,
     const data = await localRepo.getAll();
     const hydrator = store.getState()[hydrateFnName];
     if (typeof hydrator === 'function') {
-      hydrator(data);
+      if (data.ok && data.rows) {
+        hydrator(data.rows);
+      }
     }
   })();
 

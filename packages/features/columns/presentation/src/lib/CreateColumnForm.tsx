@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button, Input } from '@tc/uikit';
-import { useKanbanDispatch, useKanbanStore } from '@tc/kanban/application-react';
+import { useKanbanDispatch, kanbanStore } from '@tc/kanban/application-react';
 import { v4 as uuid } from 'uuid';
 
 export type CreateColumnFormProps = {
@@ -19,7 +19,7 @@ export function CreateColumnForm({
   const [title, setTitle] = useState('');
   const dispatch = useKanbanDispatch();
 
-  const nextPosition = useKanbanStore((s) => {
+  const nextPosition = kanbanStore((s) => {
     const cols = Object.values(s.columns)
       .filter((c) => c.board_id === boardId && !c.deleted_at)
       .sort((a, b) => a.position - b.position);

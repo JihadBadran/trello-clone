@@ -56,11 +56,12 @@ export const UserMenu = ({ onLogout }: { onLogout: () => void }) => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+        <Button variant="ghost" className="relative rounded-full">
           <Avatar className="h-8 w-8">
             <AvatarImage src={profile?.avatar_url || ''} alt="@shadcn" />
             <AvatarFallback>{profile?.full_name?.[0] || 'U'}</AvatarFallback>
           </Avatar>
+          <span className="ml-2">{session?.user?.email}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56">

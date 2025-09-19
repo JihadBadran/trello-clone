@@ -1,16 +1,41 @@
-import React, { useMemo, useEffect, useCallback } from 'react';
-import { makeKanbanStore, KanbanStore } from '@tc/kanban/application';
+import React, { useEffect } from 'react';
+import { makeKanbanStore } from '@tc/kanban/application';
 import { tabSync } from '@tc/infra/sync-tabs';
 import { createAndStartSync } from '@tc/infra/sync-cloud';
 import type { Action } from '@tc/foundation/actions';
 
 // Import repos for hydration and sync
-import { BoardsRepoIDB, BoardsRepoSupabase } from '@tc/boards/data';
-import { ColumnsRepoIDB, ColumnsRepoSupabase } from '@tc/columns/data';
-import { CardsRepoIDB, CardsRepoSupabase } from '@tc/cards/data';
+import {
+  BoardsRepoSupabase,
+  subscribeBoardsRealtime,
+} from '@tc/boards/data';
+import {
+  ColumnsRepoSupabase,
+  subscribeColumns,
+} from '@tc/columns/data';
+import {
+  CardsRepoSupabase,
+  subscribeCardRealtime,
+} from '@tc/cards/data';
+import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import type { Board } from '@tc/boards/domain';
+import type { Column } from '@tc/columns/domain';
+import type { Card } from '@tc/cards/domain';
+import { supabase } from '@tc/infra/supabase';
+
+// 1. Create the store as a module-level singleton
+export const kanbanStore = makeKanbanStore({
+  publish: (msg: Action) => tabSync.publish({ ...msg, from: tabSync.TAB_ID }),
+  tabId: tabSync.TAB_ID,
+  dev: true,
+});
 
 function useLeaderSync() {
+  const repos = kanbanStore((s) => s.repos);
+
   useEffect(() => {
+    if (!repos) return;
+
     let stopSync: (() => void) | null = null;
 
     const startKanbanSync = () => {
@@ -18,24 +43,24 @@ function useLeaderSync() {
         channels: {
           boards: {
             topic: 'boards',
-            local: BoardsRepoIDB,
+            local: repos.boards,
             cloud: BoardsRepoSupabase,
           },
           columns: {
             topic: 'columns',
-            local: ColumnsRepoIDB,
+            local: repos.columns,
             cloud: ColumnsRepoSupabase,
           },
           cards: {
             topic: 'cards',
-            local: CardsRepoIDB,
+            local: repos.cards,
             cloud: CardsRepoSupabase,
           },
         },
       });
     };
 
-    const unsub = tabSync.onLeaderChange(isLeader => {
+    const unsub = tabSync.onLeaderChange((isLeader) => {
       if (isLeader) {
         stopSync = startKanbanSync();
       } else {
@@ -48,10 +73,48 @@ function useLeaderSync() {
       unsub();
       stopSync?.();
     };
-  }, []);
+  }, [repos]);
 }
 
-function useTabSync(dispatch: (action: Action, options?: { localOnly?: boolean }) => void) {
+function useRealtimeSync() {
+  const boardId = kanbanStore((s) => s.activeBoardId);
+  const upsertBoard = kanbanStore((s) => s.upsertBoard);
+  const upsertColumn = kanbanStore((s) => s.upsertColumn);
+  const upsertCard = kanbanStore((s) => s.upsertCard);
+
+  useEffect(() => {
+    if (!boardId) return;
+
+    const subscriptions = [
+      subscribeBoardsRealtime((msg: RealtimePostgresChangesPayload<Board>) => {
+        const row = msg.new ?? msg.old;
+        if (row) upsertBoard(row as Board);
+      }),
+      subscribeColumns(
+        boardId,
+        (msg: RealtimePostgresChangesPayload<Column>) => {
+          const row = msg.new ?? msg.old;
+          if (row) upsertColumn(row as Column);
+        }
+      ),
+      subscribeCardRealtime(
+        boardId,
+        (msg: RealtimePostgresChangesPayload<Card>) => {
+          const row = msg.new ?? msg.old;
+          if (row) upsertCard(row as Card);
+        }
+      ),
+    ];
+
+    return () => {
+      subscriptions.forEach((unsub) => unsub());
+    };
+  }, [boardId, upsertBoard, upsertColumn, upsertCard]);
+}
+
+function useTabSync(
+  dispatch: (action: Action, options?: { localOnly?: boolean }) => void
+) {
   useEffect(() => {
     const unsub = tabSync.subscribe(async (action) => {
       if (action.from === tabSync.TAB_ID) {
@@ -66,47 +129,54 @@ function useTabSync(dispatch: (action: Action, options?: { localOnly?: boolean }
   }, [dispatch]);
 }
 
-export const KanbanContext = React.createContext<{ store: import('zustand').UseBoundStore<import('zustand').StoreApi<KanbanStore>> } | null>(null);
-
+// 3. The Provider component now just orchestrates hooks and renders children
 export const KanbanProvider = ({ children }: { children: React.ReactNode }) => {
-  const store = useMemo(() => {
-    const store = makeKanbanStore({
-      publish: (msg: Action) =>
-        tabSync.publish({ ...msg, from: tabSync.TAB_ID }),
-      tabId: tabSync.TAB_ID,
-      dev: true,
+  const repos = kanbanStore((s) => s.repos);
+  const dispatch = kanbanStore((s) => s.dispatch);
+  const hydrateBoards = kanbanStore((s) => s.hydrateBoards);
+  const hydrateColumns = kanbanStore((s) => s.hydrateColumns);
+  const hydrateCards = kanbanStore((s) => s.hydrateCards);
+  const setHydrated = kanbanStore((s) => s.setHydrated);
+  const setSession = kanbanStore((s) => s.setSession);
+
+  useTabSync(dispatch);
+  useLeaderSync();
+  useRealtimeSync();
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
     });
 
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [setSession]);
+
+  useEffect(() => {
     (async () => {
+      if (!repos) return;
       const [boardsResult, columnsResult, cardsResult] = await Promise.all([
-        BoardsRepoIDB.getAll(),
-        ColumnsRepoIDB.getAll(),
-        CardsRepoIDB.getAll(),
+        repos.boards.getAll(),
+        repos.columns.getAll(),
+        repos.cards.getAll(),
       ]);
 
       if (boardsResult.ok && boardsResult.rows) {
-        store.getState().hydrateBoards(boardsResult.rows);
+        hydrateBoards(boardsResult.rows);
       }
       if (columnsResult.ok && columnsResult.rows) {
-        store.getState().hydrateColumns(columnsResult.rows);
+        hydrateColumns(columnsResult.rows);
       }
       if (cardsResult.ok && cardsResult.rows) {
-        store.getState().hydrateCards(cardsResult.rows);
+        hydrateCards(cardsResult.rows);
       }
 
-      store.getState().setHydrated(true);
+      setHydrated(true);
     })();
+  }, [repos, hydrateBoards, hydrateColumns, hydrateCards, setHydrated]);
 
-    return store;
-  }, []);
-
-  const dispatch = useCallback(
-    (action: Action, opts?: { localOnly?: boolean }) =>
-      store.getState().dispatch(action, opts),
-    [store]
-  );
-  useTabSync(dispatch);
-  useLeaderSync();
-
-  return <KanbanContext.Provider value={{ store }}>{children}</KanbanContext.Provider>;
+  return <>{children}</>;
 };

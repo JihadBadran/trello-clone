@@ -4,8 +4,8 @@ import { withActionsSlice, type SliceActionsApi } from '@tc/infra/store';
 import { createCardsSlice, type CardsSlice } from './cards.slice';
 import { Action } from '@tc/foundation/actions';
 import { Card, CardsRepo } from '@tc/cards/domain';
-import { CardsRepoIDB } from '@tc/cards/data';
 import { ISODateTime } from '@tc/foundation/types';
+import { cardsRepoIDB } from '@tc/cards/data';
 
 /** Context handed to handlers */
 export type CardsCtx = {
@@ -26,7 +26,7 @@ export const withCardsActions = (deps: {
   withActionsSlice<CardsStore, CardsCtx>({
     makeCtx: (api) => ({
       api,
-      repos: { cards: CardsRepoIDB },
+      repos: { cards: cardsRepoIDB },
       publish: deps.publish,
       tabId: deps.tabId,
     }),

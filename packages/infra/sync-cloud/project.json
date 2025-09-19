@@ -1,7 +1,7 @@
 {
-  "name": "infra-sync-tabs",
+  "name": "infra-sync-cloud",
   "projectType": "library",
-  "sourceRoot": "packages/infra/sync-tabs/src",
+  "sourceRoot": "packages/infra/sync-cloud/src",
   "targets": {
     "lint": { "executor": "@nx/eslint:lint" },
     "test": { "executor": "@nx/vite:test" }

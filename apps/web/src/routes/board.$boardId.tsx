@@ -10,7 +10,7 @@ const BoardPage = () => {
   return (
     <div className="flex flex-1 flex-col">
       <Link to="/boards" className='text-primary flex items-center mx-6 w-fit'>
-        <Button variant={"link"} className='justify-start px-0'><ArrowLeft /> Back to boards</Button>
+        <Button variant={"link"} className='justify-start !px-0'><ArrowLeft className='size-6' /> Back to boards</Button>
       </Link>
 
       <KanbanBoard boardId={boardId} />

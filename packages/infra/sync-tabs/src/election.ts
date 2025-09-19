@@ -17,19 +17,19 @@ export interface TabLeader {
  */
 export function createTabLeader(namespace = 'tc-leader'): TabLeader {
   // SSR / non-browser: act as always-leader no-op (so imports don’t crash)
-  // const isBrowser =
-  //   typeof window !== 'undefined' &&
-  //   typeof (window as any).BroadcastChannel !== 'undefined'
+  const isBrowser =
+    typeof window !== 'undefined' &&
+    typeof window.BroadcastChannel !== 'undefined'
 
-  // if (!isBrowser) {
-  //   const leader = true
-  //   const listeners = new Set<(l: boolean) => void>()
-  //   return {
-  //     isLeader: () => leader,
-  //     onLeaderChange(fn) { listeners.add(fn); fn(leader); return () => listeners.delete(fn) },
-  //     destroy() { listeners.clear() },
-  //   }
-  // }
+  if (!isBrowser) {
+    const leader = true
+    const listeners = new Set<(l: boolean) => void>()
+    return {
+      isLeader: () => leader,
+      onLeaderChange(fn) { listeners.add(fn); fn(leader); return () => listeners.delete(fn) },
+      destroy() { listeners.clear() },
+    }
+  }
 
   const tab = new Tab(namespace)
   const listeners = new Set<(l: boolean) => void>()
@@ -71,8 +71,8 @@ export function createTabLeader(namespace = 'tc-leader'): TabLeader {
     onLeaderChange(fn) {
       listeners.add(fn)
       console.log('[tab-election] onLeaderChange', { listeners })
-      // // emit current state immediately so callers are consistent
-      // fn(leader)
+      // emit current state immediately so callers are consistent
+      fn(leader)
       return () => {}
     },
     destroy() {

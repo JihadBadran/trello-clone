@@ -1,4 +1,4 @@
-import type { StoreApi } from 'zustand';
+import type { StateCreator, StoreApi } from 'zustand';
 import type { ActionImpl } from '@tc/foundation/actions';
 import { withActionsSlice, type SliceActionsApi } from '@tc/infra/store';
 import { createColumnsSlice, type ColumnsSlice } from './columns.slice';
@@ -26,7 +26,7 @@ export const withColumnsActions = (deps: {
   withActionsSlice<ColumnsStore, ColumnsCtx>({
     makeCtx: (api) => ({
       api,
-      repos: { columns: ColumnsRepoIDB },
+      repos: { columns: new ColumnsRepoIDB() },
       publish: deps.publish,
       tabId: deps.tabId,
     }),
@@ -65,6 +65,21 @@ export function registerColumnsActions(store: StoreApi<ColumnsStore>) {
     },
   };
 
+  const updateTitle: ActionImpl<{ type: 'columns/updateTitle', payload: { id: string, title: string } }, ColumnsCtx> = {
+    toLocal: ({ api }, { payload }) => {
+      const column = api.getState().columns[payload.id];
+      if (column) {
+        api.getState().upsertColumn({ ...column, title: payload.title, updated_at: new Date().toISOString() as ISODateTime });
+      }
+    },
+    toPersist: async ({ repos }, { payload }) => {
+      const column = await repos.columns.get(payload.id);
+      if (column) {
+        await repos.columns.upsert({ ...column, title: payload.title, updated_at: new Date().toISOString() as ISODateTime });
+      }
+    },
+  };
+
   const resequence: ActionImpl<{ type: 'columns/resequence', payload: { boardId: string, columnId: string, newPosition: number } }, ColumnsCtx> = {
     toLocal: ({ api }, { payload }) => {
       const column = api.getState().columns[payload.columnId];
@@ -80,10 +95,11 @@ export function registerColumnsActions(store: StoreApi<ColumnsStore>) {
     },
   };
 
-  register('columns/create', createColumn as any);
-  register('columns/update', updateColumn as any);
-  register('columns/delete', deleteColumn as any);
-  register('columns/resequence', resequence as any);
+  register('columns/create', createColumn as ActionImpl<{ type: 'columns/create'; payload: Column; }, ColumnsCtx>);
+  register('columns/update', updateColumn as ActionImpl<{ type: 'columns/update'; payload: Column; }, ColumnsCtx>);
+  register('columns/delete', deleteColumn as ActionImpl<{ type: 'columns/delete'; payload: { id: string; }; }, ColumnsCtx>);
+  register('columns/resequence', resequence as ActionImpl<{ type: 'columns/resequence'; payload: { boardId: string; columnId: string; newPosition: number; }; }, ColumnsCtx>);
+  register('columns/updateTitle', updateTitle as ActionImpl<{ type: 'columns/updateTitle'; payload: { id: string; title: string; }; }, ColumnsCtx>);
 }
 
 /** Convenience factory to build a standalone Columns store */
@@ -91,4 +107,4 @@ export const makeColumnsStore = (deps: { publish: (action: Action) => void; tabI
   ((set: StoreApi<ColumnsStore>['setState'], get: StoreApi<ColumnsStore>['getState'], api: StoreApi<ColumnsStore> & SliceActionsApi<ColumnsCtx>) => {
     const withMw = withColumnsActions(deps)(createColumnsSlice as any);
     return withMw(set, get, api);
-  }) as any;
+  }) as (set: StoreApi<ColumnsStore>['setState'], get: StoreApi<ColumnsStore>['getState'], api: StoreApi<ColumnsStore> & SliceActionsApi<ColumnsCtx>) => ColumnsStore;
