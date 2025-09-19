@@ -28,8 +28,8 @@ export default defineConfig(async () => ({
       registerType: 'autoUpdate',
       devOptions: { enabled: true, type: 'module' },   // enables SW in dev (localhost)
       manifest: {
-        name: 'TC Kanban',
-        short_name: 'Kanban',
+        name: 'Trello',
+        short_name: 'TRLO',
         start_url: '/',
         // scope: '/',
         display: 'standalone',
