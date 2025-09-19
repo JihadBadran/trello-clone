@@ -1,14 +1,13 @@
-import '../styles.css';
 import {
   createRootRoute,
   Outlet,
-  redirect,
   useNavigate,
 } from '@tanstack/react-router';
+import { UserMenu } from '@tc/auth';
 import { KanbanProvider } from '@tc/kanban/application-react';
 import { SidebarInset, SidebarProvider } from '@tc/uikit/components/ui/sidebar';
 import { Kanban } from '@tc/uikit/icons';
-import { UserMenu } from '@tc/auth';
+import '../styles.css';
 
 const RootLayout = () => {
   const navigate = useNavigate();
