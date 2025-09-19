@@ -21,6 +21,15 @@
     "sharedGlobals": []
   },
   "nxCloudId": "68c8183570209b5e48a02384",
+  "tasksRunnerOptions": {
+    "default": {
+      "runner": "@nx/nx-cloud",
+      "options": {
+        "accessToken": "USE_ENV_VAR",
+        "canTrackAnalytics": false
+      }
+    }
+  },
   "plugins": [
     {
       "plugin": "@nx/js/typescript",
