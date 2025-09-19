@@ -25,7 +25,7 @@ import {
   DialogHeader,
   DialogTrigger,
 } from '@tc/uikit/components/ui/dialog';
-import { Columns3, Columns3Cog, User, Edit } from '@tc/uikit/icons';
+import { Columns3Cog, User, Edit } from '@tc/uikit/icons';
 import { KanbanProvider as DndKanbanProvider } from './lib/KanbanProvider';
 import { IdCardIcon } from '@tc/uikit/icons';
 // Helper to find the new position of a card after being moved

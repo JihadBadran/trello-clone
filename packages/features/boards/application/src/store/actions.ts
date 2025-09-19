@@ -2,13 +2,13 @@ import type { StoreApi } from 'zustand';
 import type { Action, ActionImpl } from '@tc/foundation/actions';
 import { withActionsSlice, type SliceActionsApi } from '@tc/infra/store';
 import { createBoardsSlice } from './boards.slice';
-import { BoardsRepoIDB } from '@tc/boards/data';
+import { boardsRepoIDB, BoardsRepoIDB } from '@tc/boards/data';
 import { Board, BoardsSlice } from '@tc/boards/domain';
 
 /** Context handed to handlers */
 export type BoardsCtx = {
   api: StoreApi<BoardsSlice>;
-  repos: { boards: typeof BoardsRepoIDB };
+  repos: { boards: BoardsRepoIDB };
   publish: (msg: { from: string; type: string; payload: any; meta?: any }) => void;
   tabId: string;
 };
@@ -25,7 +25,7 @@ export const withBoardsActions = (deps: {
     dev: deps.dev,
     makeCtx: (api) => ({
       api,
-      repos: { boards: BoardsRepoIDB },
+      repos: { boards: boardsRepoIDB },
       publish: deps.publish,
       tabId: deps.tabId,
     }),

@@ -1,4 +1,4 @@
-import type { StateCreator, StoreApi } from 'zustand';
+import type { StoreApi } from 'zustand';
 import type { ActionImpl } from '@tc/foundation/actions';
 import { withActionsSlice, type SliceActionsApi } from '@tc/infra/store';
 import { createColumnsSlice, type ColumnsSlice } from './columns.slice';
