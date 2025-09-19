@@ -5,7 +5,7 @@ import { supabase } from '@tc/infra/supabase';
 import { Button } from '@tc/uikit/components/ui/button';
 import { Input } from '@tc/uikit/components/ui/input';
 import { Label } from '@tc/uikit/components/ui/label';
-import { inviteMemberSchema, InviteMemberFormInput } from '@tc/foundation/validation';
+import { inviteMemberSchema, InviteMemberFormInput, validateEmail, validateUuid } from '@tc/foundation/validation';
 
 export type InviteMemberFormProps = {
   boardId: string;
@@ -32,13 +32,25 @@ export function InviteMemberForm({ boardId }: InviteMemberFormProps) {
       return;
     }
     setIsSearching(true);
+    // check if email is valid with zod
+    const usingEmail = validateEmail.safeParse(query).success;
+
+    // check if uuid is valid with zod
+    const isUuid = validateUuid.safeParse(query).success;
     const t = setTimeout(async () => {
       try {
-        const { data, error } = await (supabase as any)
+        let q = supabase
           .from('profiles')
-          .select('id,email,full_name,avatar_url')
-          .or(`email.ilike.%${query}%,id.eq.${query}`)
+          .select('*')
           .limit(10);
+
+        if (usingEmail) {
+          q = q.eq('email', query);
+        } else if (isUuid) {
+          q = q.eq('id', query);
+        }
+
+        const { data, error } = await q;
         if (!cancelled) {
           if (!error) setResults((data ?? []) as ProfileRow[]);
           setIsSearching(false);
