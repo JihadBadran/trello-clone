@@ -1,3 +1,4 @@
+import { ISODateTime } from '@tc/foundation/types';
 import { withTx } from './client';
 import { STORES } from './schema'
 
@@ -19,7 +20,7 @@ export async function metaSet<T = unknown>(key: string, value: T): Promise<void>
 const CURSOR_PREFIX = 'cursor:'
 
 export async function getCursor(topic: string): Promise<string | null> {
-  return await metaGet<string>(`${CURSOR_PREFIX}${topic}`)
+  return await metaGet<ISODateTime>(`${CURSOR_PREFIX}${topic}`)
 }
 export async function setCursor(topic: string, iso: string): Promise<void> {
   await metaSet(`${CURSOR_PREFIX}${topic}`, iso)

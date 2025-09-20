@@ -1,11 +1,9 @@
 import { STORES, getAll, put, del, get as idbGet } from '@tc/infra/idb';
 import { enqueue } from '@tc/infra/idb';
 import type { Board } from '@tc/boards/domain';
-import { BoardsRepo } from '../ports';
-import { OutboxItem } from '@tc/foundation/types';
-import { PushResult, PullResult } from '@tc/infra/sync-cloud';
+import { FeatureRepo, ISODateTime, OutboxItem, PullResult, PushResult } from '@tc/foundation/types';
 
-export class BoardsRepoIDB implements BoardsRepo {
+export class BoardsRepoIDB implements FeatureRepo<Board> {
   public onApply?: (item: Board) => void;
 
   constructor(onApply?: (item: Board) => void) {
@@ -23,14 +21,26 @@ export class BoardsRepoIDB implements BoardsRepo {
     return { ok: true, rows };
   }
 
-  async upsert(b: Board) {
+  async putLocal(b: Board) {
     await put(STORES.BOARDS, b);
+  }
+  async enqueueUpsert(b: Board) {
     await enqueue('boards', 'upsert', b);
   }
+  async upsert(b: Board) {
+    await this.putLocal(b);
+    await this.enqueueUpsert(b);
+  }
 
-  async remove(id: string): Promise<void> {
+  async removeLocal(id: string): Promise<void> {
     await del(STORES.BOARDS, id);
+  }
+  async enqueueRemove(id: string): Promise<void> {
     await enqueue('boards', 'remove', { id });
+  }
+  async remove(id: string): Promise<void> {
+    await this.removeLocal(id);
+    await this.enqueueRemove(id);
   }
 
   async archive(id: string) {
@@ -52,7 +62,7 @@ export class BoardsRepoIDB implements BoardsRepo {
 
   async pullSince(since: string | null, limit: number) {
     console.log('pulling boards since', since, limit);
-    return Promise.resolve({ ok: true, rows: [], cursor: new Date().toISOString() });
+    return Promise.resolve({ ok: true, rows: [], cursor: new Date().toISOString() as ISODateTime });
   }
 };
 

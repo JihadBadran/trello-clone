@@ -1,90 +1,105 @@
-# TrelloClone
+# Trello Clone (Nx + React)
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+An offline-first Kanban app built with Nx, React 19, Zustand, Tailwind v4, and Supabase. The monorepo is organized by domain features: `boards`, `columns`, `cards`, and a composing `kanban` feature.
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is almost ready ✨.
+See `docs/` for architecture and implementation details:
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/nx-api/js?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
+- `docs/ARCHITECTURE.md`
+- `docs/STATE.md`
+- `docs/THEMING.md`
+- `docs/CI-CD.md`
 
-## Finish your remote caching setup
+## Prerequisites
 
-[Click here to finish setting up your workspace!](https://cloud.nx.app/connect/PoAlfQiGDi)
+- Node >= 20 (see `package.json#engines`)
+- pnpm 9 (`npm i -g pnpm`)
 
+Optional:
 
-## Generate a library
+- Nx Console extension (VSCode/IntelliJ) for a great DX
+- Supabase CLI (only needed if you regenerate types or run local Supabase)
 
-```sh
-npx nx g @nx/js:lib packages/pkg1 --publishable --importPath=@my-org/pkg1
+## Quick Start
+
+1) Install dependencies
+
+```bash
+pnpm install
 ```
 
-## Run tasks
+2) Configure environment variables for the web app
 
-To build the library use:
+Create or edit `apps/web/.env`:
 
-```sh
-npx nx build pkg1
+```bash
+VITE_SUPABASE_URL="https://<your-project>.supabase.co"
+VITE_SUPABASE_ANON_KEY="<your-anon-key>"
 ```
 
-To run any task with Nx use:
+The repo includes demo values that point to a public project. You can keep them for local development, or switch to your own Supabase project.
 
-```sh
-npx nx <target> <project-name>
+3) Start the dev server
+
+```bash
+pnpm nx serve web
+# opens http://localhost:4200
 ```
 
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
+4) Explore the project graph
 
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Versioning and releasing
-
-To version and release the library use
-
-```
-npx nx release
+```bash
+pnpm nx graph
 ```
 
-Pass `--dry-run` to see what would happen without actually releasing the library.
+## Common Tasks
 
-[Learn more about Nx release &raquo;](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+- Build the app
 
-## Keep TypeScript project references up to date
-
-Nx automatically updates TypeScript [project references](https://www.typescriptlang.org/docs/handbook/project-references.html) in `tsconfig.json` files to ensure they remain accurate based on your project dependencies (`import` or `require` statements). This sync is automatically done when running tasks such as `build` or `typecheck`, which require updated references to function correctly.
-
-To manually trigger the process to sync the project graph dependencies information to the TypeScript project references, run the following command:
-
-```sh
-npx nx sync
+```bash
+pnpm nx build web
 ```
 
-You can enforce that the TypeScript project references are always in the correct state when running in CI by adding a step to your CI job configuration that runs the following command:
+- Run tests
 
-```sh
-npx nx sync:check
+```bash
+pnpm nx test web
 ```
 
-[Learn more about nx sync](https://nx.dev/reference/nx-commands#sync)
+- Lint all projects
 
+```bash
+pnpm nx affected -t lint
+```
 
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+## Supabase Types (optional)
 
-## Install Nx Console
+If you use your own Supabase project, regenerate the typed API:
 
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
+```bash
+# Update the project-id first in package.json (scripts.cloud:types:gen)
+pnpm run cloud:types:gen
+```
 
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+This writes `packages/infra/supabase/src/types.gen.ts` using the Supabase CLI. You may need to login first:
 
-## Useful links
+```bash
+pnpm dlx supabase login
+```
 
-Learn more:
+## Monorepo Layout (high level)
 
-- [Learn more about this workspace setup](https://nx.dev/nx-api/js?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+- `apps/web/` – Vite React app (routing, providers)
+- `packages/foundation/` – shared types, actions, utils
+- `packages/infra/` – IndexedDB, Supabase client/types, sync controller, cross-tab sync
+- `packages/features/` – domain features (`boards`, `columns`, `cards`, `kanban`) split into `application`, `application-react`, `data`, `domain`, `presentation`
 
-And join the Nx community:
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+More details in `docs/ARCHITECTURE.md`.
+
+## Notes
+
+- The app uses Tailwind v4 with the `@tailwindcss/vite` plugin. Tokens are defined in `apps/web/src/styles.css` and the UI Kit preset is consumed in `apps/web/tailwind.config.ts`.
+- The PWA service worker is enabled in dev (`vite-plugin-pwa`). If you see aggressive caching, perform a hard refresh or toggle "Update on reload" in DevTools > Application > Service Workers.
+
+## License
+
+MIT

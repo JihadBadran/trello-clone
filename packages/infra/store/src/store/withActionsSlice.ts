@@ -1,6 +1,7 @@
 import type { StateCreator, StoreApi } from 'zustand';
 import { nanoid } from 'nanoid';
 import type { Action, ActionImpl } from '@tc/foundation/actions';
+import { handlePersistence } from './dispatch.helpers';
 type Publish = (action: Action) => void;
 
 export type SliceActionsApi<Ctx> = {
@@ -48,12 +49,10 @@ export function withActionsSlice<S extends object, Ctx extends object>(deps: {
         // 3. Broadcast to other tabs
         publish({ ...action, from: tabId });
 
-        // 4. Persist to local DB and enqueue for cloud sync
-        if (handler.toPersist) {
-          const { toPersist } = handler;
-          const meta = { ...action.meta, actionId: nanoid() };
-          await toPersist(ctx, { ...action, meta });
-        }
+        // 4. Delegate to the persistence and sync handler
+        const meta = { ...action.meta, actionId: nanoid() };
+        const actionWithMeta = { ...action, meta };
+        await handlePersistence(handler, ctx, actionWithMeta);
       };
 
       return {

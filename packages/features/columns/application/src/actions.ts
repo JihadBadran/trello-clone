@@ -4,13 +4,14 @@ import { withActionsSlice, type SliceActionsApi } from '@tc/infra/store';
 import { createColumnsSlice, type ColumnsSlice } from './columns.slice';
 import { Action } from '@tc/foundation/actions';
 import { ISODateTime } from '@tc/foundation/types';
-import { Column, ColumnsRepo } from '@tc/columns/domain';
-import { ColumnsRepoIDB } from '@tc/columns/data';
+import { Column } from '@tc/columns/domain';
+import { ColumnsRepoIDB, ColumnsRepoSupabase } from '@tc/columns/data';
+import { FeatureRepo } from '@tc/foundation/types';
 
 /** Context handed to handlers */
 export type ColumnsCtx = {
   api: StoreApi<ColumnsStore>;
-  repos: { columns: ColumnsRepo };
+  repos: { columns: FeatureRepo<Column> };
   publish: (action: Action) => void;
   tabId: string;
 };
@@ -43,7 +44,10 @@ export function registerColumnsActions(store: StoreApi<ColumnsStore>) {
       api.getState().upsertColumn({ ...payload, updated_at: new Date().toISOString() as ISODateTime });
     },
     toPersist: async ({ repos }, { payload }) => {
-      await repos.columns.upsert({ ...payload, updated_at: new Date().toISOString() as ISODateTime });
+      await (repos.columns as ColumnsRepoIDB).putLocal({ ...payload, updated_at: new Date().toISOString() as ISODateTime });
+    },
+    toCloud: async (_, { payload }) => {
+      await ColumnsRepoSupabase.upsert({ ...payload, updated_at: new Date().toISOString() as ISODateTime });
     },
   };
 
@@ -52,7 +56,10 @@ export function registerColumnsActions(store: StoreApi<ColumnsStore>) {
       api.getState().upsertColumn({ ...payload, updated_at: new Date().toISOString() as ISODateTime });
     },
     toPersist: async ({ repos }, { payload }) => {
-      await repos.columns.upsert({ ...payload, updated_at: new Date().toISOString() as ISODateTime });
+      await (repos.columns as ColumnsRepoIDB).putLocal({ ...payload, updated_at: new Date().toISOString() as ISODateTime });
+    },
+    toCloud: async (_, { payload }) => {
+      await ColumnsRepoSupabase.upsert({ ...payload, updated_at: new Date().toISOString() as ISODateTime });
     },
   };
 
@@ -61,7 +68,10 @@ export function registerColumnsActions(store: StoreApi<ColumnsStore>) {
       api.getState().removeColumn(payload.id);
     },
     toPersist: async ({ repos }, { payload }) => {
-      await repos.columns.remove(payload.id);
+      await (repos.columns as ColumnsRepoIDB).removeLocal(payload.id);
+    },
+    toCloud: async (_, { payload }) => {
+      await ColumnsRepoSupabase.remove(payload.id);
     },
   };
 
@@ -75,7 +85,13 @@ export function registerColumnsActions(store: StoreApi<ColumnsStore>) {
     toPersist: async ({ repos }, { payload }) => {
       const column = await repos.columns.get(payload.id);
       if (column) {
-        await repos.columns.upsert({ ...column, title: payload.title, updated_at: new Date().toISOString() as ISODateTime });
+        await (repos.columns as ColumnsRepoIDB).putLocal({ ...column, title: payload.title, updated_at: new Date().toISOString() as ISODateTime });
+      }
+    },
+    toCloud: async ({ repos }, { payload }) => {
+      const column = await repos.columns.get(payload.id);
+      if (column) {
+        await ColumnsRepoSupabase.upsert({ ...column, title: payload.title, updated_at: new Date().toISOString() as ISODateTime });
       }
     },
   };
@@ -90,7 +106,13 @@ export function registerColumnsActions(store: StoreApi<ColumnsStore>) {
     toPersist: async ({ repos }, { payload }) => {
       const column = await repos.columns.get(payload.columnId);
       if (column) {
-        await repos.columns.upsert({ ...column, position: payload.newPosition, updated_at: new Date().toISOString() as ISODateTime });
+        await (repos.columns as ColumnsRepoIDB).putLocal({ ...column, position: payload.newPosition, updated_at: new Date().toISOString() as ISODateTime });
+      }
+    },
+    toCloud: async ({ repos }, { payload }) => {
+      const column = await repos.columns.get(payload.columnId);
+      if (column) {
+        await ColumnsRepoSupabase.upsert({ ...column, position: payload.newPosition, updated_at: new Date().toISOString() as ISODateTime });
       }
     },
   };

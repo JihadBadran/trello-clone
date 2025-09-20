@@ -1,14 +1,13 @@
-import type { CursorApi } from '@tc/infra/sync-cloud';
+import type { CursorApi, ISODateTime, TopicName } from '@tc/foundation/types';
 import { getCursor, setCursor } from './meta';
 
 export class IdbCursor implements CursorApi {
-  constructor(private namespace: string) {}
 
-  get() {
-    return getCursor(this.namespace);
+  get(topic: TopicName): Promise<ISODateTime | null> {
+    return getCursor(topic) as Promise<ISODateTime | null>;
   }
 
-  set(value: string) {
-    return setCursor(this.namespace, value);
+  set(topic: TopicName, value: ISODateTime): Promise<void> {
+    return setCursor(topic, value);
   }
 }

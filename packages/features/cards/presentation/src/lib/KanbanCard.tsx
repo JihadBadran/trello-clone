@@ -1,18 +1,15 @@
 'use client';
-import { useSortable } from '@dnd-kit/sortable';
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { t } from '@tc/infra/dnd';
 import {
-  Card,
   CardContent,
   CardHeader,
-  CardTitle,
+  CardTitle
 } from '@tc/uikit/components/ui/card';
-import { ScrollArea } from '@tc/uikit/components/ui/scroll-area';
-import { ScrollBar } from '@tc/uikit/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@tc/uikit/components/ui/scroll-area';
 import { cn } from '@tc/uikit/lib/utils';
 import { HTMLAttributes, ReactNode } from 'react';
-import { SortableContext } from '@dnd-kit/sortable';
-import { motion } from 'framer-motion';
 
 type KanbanItemBase = {
   id: string;
@@ -25,6 +22,21 @@ export type KanbanCardProps<T extends KanbanItemBase = KanbanItemBase> = T & {
   className?: string;
 };
 
+const CardInner = ({
+  name,
+  children,
+}: {
+  name: string;
+  children: ReactNode;
+}) => (
+  <>
+    <CardHeader className="flex gap-2 items-center">
+      <CardTitle>{name}</CardTitle>
+    </CardHeader>
+    <CardContent>{children}</CardContent>
+  </>
+);
+
 export const KanbanCard = <T extends KanbanItemBase = KanbanItemBase>({
   id,
   name,
@@ -35,7 +47,7 @@ export const KanbanCard = <T extends KanbanItemBase = KanbanItemBase>({
     attributes,
     listeners,
     setNodeRef,
-    // transition,
+    transition,
     transform,
     isDragging,
   } = useSortable({
@@ -43,63 +55,70 @@ export const KanbanCard = <T extends KanbanItemBase = KanbanItemBase>({
   });
 
   const style = {
-    // transition,
+    transition: transition ? transition.toString() : undefined,
     transform: CSS.Transform.toString(transform),
+    opacity: isDragging ? 0 : 1,
   };
 
+  const content = <CardInner name={name}>{children}</CardInner>;
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.9 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -20, scale: 0.9 }}
-      transition={{ duration: 0.3, ease: 'easeInOut' }}
+    <div
+      ref={setNodeRef}
+      className={cn('cursor-grab gap-4 rounded-md shadow-sm px-4 py-6', className)}
       style={style}
       {...listeners}
       {...attributes}
-      ref={setNodeRef}
     >
-      <Card
-        className={cn(
-          'cursor-grab gap-4 rounded-md shadow-sm',
-          isDragging && 'pointer-events-none cursor-grabbing opacity-30'
-          // className
-        )}
-      >
-        <CardHeader className="flex gap-2 items-center">
-          <CardTitle>{name}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {children}
-        </CardContent>
-      </Card>
-    </motion.div>
+      {content}
+      {isDragging && (
+        <t.In>
+          <div className={cn('rounded-md shadow-sm px-4 py-6 bg-secondary')}>{content}</div>
+        </t.In>
+      )}
+    </div>
   );
 };
 
-export type KanbanCardsProps<T extends KanbanItemBase = KanbanItemBase> =
-  Omit<HTMLAttributes<HTMLDivElement>, 'children'> & {
-    children: (item: T) => ReactNode;
-    items: T[];
-    columnId: string;
-  };
+export type DropHint = {
+  overId: string | null;
+  place: 'before' | 'after' | null;
+  columnId: string | null;
+} | null;
+
+export type KanbanCardsProps<T extends KanbanItemBase = KanbanItemBase> = Omit<
+  HTMLAttributes<HTMLDivElement>,
+  'children'
+> & {
+  children: (item: T) => ReactNode;
+  items: T[];
+  columnId: string;
+  dropHint?: DropHint;
+};
 
 export const KanbanCards = <T extends KanbanItemBase = KanbanItemBase>({
   children,
   className,
   items,
   columnId,
+  dropHint,
   ...rest
 }: KanbanCardsProps<T>) => {
   const filteredData = items.filter((item) => item.column === columnId);
   const sortableIds = filteredData.map((item) => item.id);
   return (
     <ScrollArea className="overflow-hidden flex-1">
-      <SortableContext items={sortableIds}>
+      <SortableContext
+        items={sortableIds}
+        strategy={verticalListSortingStrategy}
+      >
         <div
           className={cn('flex flex-grow flex-col gap-2 p-2', className)}
           {...rest}
         >
-          {filteredData.map(children)}
+          {filteredData.map((item) => (
+            children(item)
+          ))}
         </div>
       </SortableContext>
       <ScrollBar orientation="vertical" />

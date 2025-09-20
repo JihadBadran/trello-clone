@@ -5,7 +5,7 @@ import type {
   Millis,
   PushResult,
   PullResult,
-} from './types'
+} from '@tc/foundation/types'
 import type { OutboxItem } from '@tc/foundation/types'
 
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n))

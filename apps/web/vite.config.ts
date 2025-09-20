@@ -27,6 +27,38 @@ export default defineConfig(async () => ({
     VitePWA({
       registerType: 'autoUpdate',
       devOptions: { enabled: true, type: 'module' },   // enables SW in dev (localhost)
+      includeAssets: ['favicon.ico', 'robots.txt'],
+
+      workbox: {
+        // Precache everything Vite emits (JS/CSS/HTML/assets)
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // Serve index.html for client routes
+        navigateFallback: '/index.html',
+        // Optional runtime caching (see below)
+        runtimeCaching: [
+          // Images, icons, avatars → fast offline
+          {
+            urlPattern: ({ request }) => request.destination === 'image',
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'images',
+              expiration: { maxEntries: 300, maxAgeSeconds: 60 * 60 * 24 * 30 },
+            },
+          },
+          // Supabase REST/Storage reads → still show last-cached when offline
+          {
+            urlPattern: ({ url }) =>
+              url.host.endsWith('supabase.co') &&
+              (url.pathname.startsWith('/storage') || url.pathname.includes('/rest/')),
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'supabase',
+              expiration: { maxEntries: 300, maxAgeSeconds: 60 * 60 * 12 },
+            },
+          },
+        ],
+        cleanupOutdatedCaches: true,
+      },
       manifest: {
         name: 'Trello',
         display_override: ['standalone', 'minimal-ui'],

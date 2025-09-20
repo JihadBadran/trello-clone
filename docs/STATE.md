@@ -1,44 +1,62 @@
 # State Management
 
-We follow a **hybrid strategy** aligned with current frontend best practices:
+We follow a **hybrid, offline-first strategy**:
 
-- **Zustand (vanilla)** for **local feature state** inside the application layer.
-- **React adapters** in `application-react` to expose feature providers/hooks.
-- **Server/cache** handled by query clients (e.g. TanStack Query) where offline/outbox is not required.
-- **Outbox + sync** handled by `data/idb` and `data/sync`.
+- **Zustand (vanilla)** in each feature's `application/` package for local state and mutations.
+- **React adapters** live in `application-react/` to expose providers and hooks.
+- **IndexedDB outbox** for write-ahead persistence and offline capability.
+- **Cross-tab sync** via BroadcastChannel; **cloud sync** via Supabase Realtime + leader-only controller.
 
 ---
 
 ## Why Zustand Vanilla?
 
-- **Framework-agnostic**: core state stores can be used outside React (workers, tests).
-- **Simple and composable**: each feature owns its store (`boards`, `cards`, `auth`).
-- **React adapter** is thin and easily replaced.
+- **Framework-agnostic**: stores work in workers, tests, or Node (no React dependency).
+- **Composable**: each feature slice (`boards`, `columns`, `cards`) owns its state and actions.
+- **Thin React layer**: easy to reuse stores outside the app or migrate UI frameworks.
+
+---
+
+## Slice + Actions Middleware
+
+Each feature store is created with a middleware `withActionsSlice` that adds:
+
+- `register(type, impl)` – register an action implementation.
+- `dispatch(action, { localOnly? })` – execute an action pipeline.
+
+Action implementation shape:
+
+- `toLocal(ctx, action)` – pure local mutation. Must not call the network.
+- `toPersist(ctx, action)` – persist mutation: write to IDB and enqueue into the outbox.
+
+This ensures a consistent path for broadcasting, persistence, and replay across tabs.
 
 ---
 
 ## Sync and Offline
 
-- **IndexedDB repos** persist state locally.
-- **Outbox** pattern: mutations are stored locally, then synced in the background.
-- **BroadcastChannel bus** syncs actions across tabs.
-- **Sync controller** merges local/cloud using LWW (last-write-wins).
+- **IndexedDB repos** persist local state (`repo.idb.ts`).
+- **Outbox** records mutations for background syncing.
+- **BroadcastChannel** delivers actions to sibling tabs; followers replay with `localOnly: true` and do not persist.
+- **Supabase Realtime** provides cross-device updates.
+- **MultiSyncController** (leader tab only) drains the outbox and performs cloud `push/pullSince` with LWW.
 
 ---
 
-## When to Use TanStack Query
+## Guardrails
 
-For server state that doesn’t need offline/outbox:
-- Use TanStack Query in React.
-- Keep caching, retries, and stale-while-revalidate there.
-- Still expose domain entities via ports for consistency.
+- **No cloud calls** in `toLocal` or in feature providers.
+- **Leader-only persistence** when replaying remote/tab-broadcasted actions (followers pass `localOnly: true`).
+- **Idempotent handlers** using LWW timestamps.
 
 ---
 
-## Example Flow
+## End-to-end flow
 
-1. **Presentation** calls `useBoards()` hook.  
-2. **application-react** delegates to vanilla Zustand store.  
-3. Store interacts with **application.use-cases** (e.g., `CreateBoard`).  
-4. Use-case calls a **port** (e.g., `BoardsRepo`).  
-5. Repo is implemented in **data/idb** (local) and synced via **data/sync**.
+1. **UI** invokes a helper hook (e.g., `useCreateBoard()`).
+2. Hook calls `dispatch({ type: 'boards/create', payload })`.
+3. `toLocal` mutates the store and broadcasts the action to other tabs.
+4. `toPersist` writes to IDB and enqueues the outbox.
+5. Leader tab’s `MultiSyncController` pushes the outbox to Supabase and pulls updates.
+6. Realtime + BroadcastChannel deliver updates; followers replay with `localOnly: true`.
+

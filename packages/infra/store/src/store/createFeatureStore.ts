@@ -1,18 +1,10 @@
 import { Action } from '@tc/foundation/actions';
-import { FeatureRepo } from '@tc/foundation/types';
+import { FeatureRepo, ISODateTime, type ChannelConfig, type CloudRepo } from '@tc/foundation/types';
 import { IdbOutbox, getCursor, setCursor } from '@tc/infra/idb';
-import {
-  MultiSyncController,
-  type ChannelConfig,
-  type CloudRepo,
-  type LocalRepo,
-} from '@tc/infra/sync-cloud';
+import { MultiSyncController } from '@tc/infra/sync-cloud';
 import { tabSync } from '@tc/infra/sync-tabs';
 import { create, type StateCreator, type StoreApi } from 'zustand';
 import { type SliceActionsApi } from './withActionsSlice';
-
-// Define a repository that is guaranteed to have a `getAll` method for hydration.
-export type HydratableRepo<T> = LocalRepo & { getAll: () => Promise<T[]> };
 
 // Generic types for the feature's state and context
 type FeatureSlice = Record<string, unknown>;
@@ -88,7 +80,7 @@ export function createFeatureStore<S extends FeatureSlice, C extends FeatureCtx,
         outbox: new IdbOutbox(),
         // Provide a multi-topic cursor adapter compliant with CursorApi
         cursor: {
-          get: (t: string) => getCursor(t),
+          get: (t: string) => getCursor(t) as Promise<ISODateTime | null>,
           set: (t: string, v: string) => setCursor(t, v),
         },
         schedule: (fn, ms) => {

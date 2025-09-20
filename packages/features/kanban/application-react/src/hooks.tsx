@@ -1,4 +1,8 @@
-import { kanbanStore } from './provider';
+import { kanbanStore, refreshKanbanData } from './provider';
+
+export function useRefreshKanban() {
+  return refreshKanbanData;
+}
 import type { Column } from '@tc/columns/domain';
 import type { Card } from '@tc/cards/domain';
 

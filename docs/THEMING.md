@@ -1,31 +1,36 @@
 # Theming and UI Kit
 
-Our design system lives in the **uikit** package:
+Our design system lives in the `packages/uikit/` package and is consumed by apps via a Tailwind v4 preset.
 
-- Based on **[shadcn/ui](https://ui.shadcn.com/)** components.
-- Powered by **Tailwind v4** (`@tailwindcss/vite` plugin).
-- Exported as a **preset** (`tailwind-preset.ts`) for apps to consume.
+- Based on composable primitives and shadcn-style components.
+- Powered by **Tailwind v4** via the `@tailwindcss/vite` plugin.
+- Exported as a **preset** from `packages/uikit/tailwind-preset.ts`.
 
 ---
 
-## Tailwind v4
+## Tailwind v4 Setup
 
-Tailwind v4 is **CSS-first**:
+We use Tailwind v4 and enable it in Vite:
 
-- No `tailwind.config.js` required in libraries.
-- Each environment (app, Storybook) has its own CSS entry with:
+- `apps/web/vite.config.ts` – includes `(await import('@tailwindcss/vite')).default()`.
+- `apps/web/src/styles.css` – includes `@import 'tailwindcss'` and defines theme tokens.
+- `apps/web/tailwind.config.ts` – consumes the UI kit preset and sets content globs.
 
-```css
-@import "tailwindcss";
-@source "../../packages/uikit/src/**/*.{ts,tsx}";
-```
-
-- **`@theme`** directive defines tokens:
+Tokens are defined in CSS and mapped with `@theme inline`:
 
 ```css
-@theme {
-  --color-brand: #4f46e5;
-  --radius-xl: 1rem;
+@import 'tailwindcss';
+
+:root {
+  --background: ...;
+  --foreground: ...;
+  /* other tokens */
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  /* mappings to Tailwind design tokens */
 }
 ```
 
@@ -35,22 +40,39 @@ Tailwind v4 is **CSS-first**:
 
 ```
 packages/uikit/
-  src/components/ui/   # Generated shadcn components
+  src/components/ui/   # Reusable components
   src/lib/utils.ts     # cn() helper (clsx + tailwind-merge)
   tailwind-preset.ts   # Central tokens and plugin setup
 ```
 
-- Components import `cn` from `@tc/uikit/lib`.
-- Apps import from `@tc/uikit/components/ui/*` or the components barrel.
+- Components can import `cn` from `@tc/uikit/lib`.
+- Apps import UI primitives from `@tc/uikit/components/ui/*`.
+
+The app consumes the preset in `apps/web/tailwind.config.ts`:
+
+```ts
+import type { Config } from 'tailwindcss';
+import preset from '@tc/uikit/tailwind-preset';
+
+export default {
+  presets: [preset],
+  content: [
+    './index.html',
+    'apps/web/src/**/*.{ts,tsx}',
+    'packages/uikit/src/**/*.{ts,tsx}',
+    'packages/presentation/src/**/*.{ts,tsx}',
+  ],
+} satisfies Config
+```
 
 ---
 
-## Storybook Integration
+## Storybook Integration (optional)
 
-Each library can run Storybook in isolation:
+Libraries can set up Storybook to preview components in isolation.
 
-- **Vite + @tailwindcss/vite** plugin in `.storybook/main.ts`.
-- Dedicated CSS entry (`storybook.tailwind.css`) with `@import "tailwindcss";` and `@source "../src/**/*.{ts,tsx}"`.
+- Use Vite + `@tailwindcss/vite` in Storybook's config.
+- Provide a CSS entry that imports Tailwind and sources your components.
 
 This ensures utilities are generated when rendering components outside the app.
 
@@ -59,6 +81,6 @@ This ensures utilities are generated when rendering components outside the app.
 ## Why this is future-ready
 
 - Centralized tokens via Tailwind preset.
-- Shadcn components are composable and easily themed.
+- Components are composable and easily themed.
 - Tailwind v4 reduces config overhead and integrates smoothly with Vite.
 - Storybook previews scale with features, enabling visual regression tests.

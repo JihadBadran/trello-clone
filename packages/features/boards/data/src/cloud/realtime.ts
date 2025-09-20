@@ -1,12 +1,9 @@
-import { supabase } from '@tc/infra/supabase';
+import { RealtimeChannel } from '@supabase/supabase-js';
 
 type Handler = (payload: any) => void;
 
-export function subscribeBoardsRealtime(onChange: Handler) {
-  const ch = supabase.channel(`boards:all`, {
-    config: { broadcast: { self: false } },
-  });
-  ch.on(
+export function subscribeBoardsRealtime(realtimeChannel: RealtimeChannel, onChange: Handler) {
+  realtimeChannel.on(
     'postgres_changes',
     {
       event: '*',
@@ -15,15 +12,11 @@ export function subscribeBoardsRealtime(onChange: Handler) {
     },
     onChange,
   );
-  ch.subscribe();
-  return () => ch.unsubscribe();
+  return () => realtimeChannel.unsubscribe();
 }
 
-export function subscribeBoardRealtime(board_id: string, onChange: Handler) {
-  const ch = supabase.channel(`boards:${board_id}`, {
-    config: { broadcast: { self: false } },
-  });
-  ch.on(
+export function subscribeBoardRealtime(board_id: string, realtimeChannel: RealtimeChannel, onChange: Handler) {
+  realtimeChannel.on(
     'postgres_changes',
     {
       event: '*',
@@ -33,6 +26,6 @@ export function subscribeBoardRealtime(board_id: string, onChange: Handler) {
     },
     onChange
   );
-  ch.subscribe();
-  return () => supabase.removeChannel(ch);
+  realtimeChannel.subscribe();
+  return () => realtimeChannel.unsubscribe();
 }

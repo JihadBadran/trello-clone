@@ -1,5 +1,8 @@
 {
   "extends": "../../../tsconfig.base.json",
   "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "compilerOptions": {
+    "lib": ["DOM", "es2022"]
+  },
   "exclude": ["src/**/*.test.*", "src/**/*.spec.*", "vite.config.*", "vitest.config.*"]
 }

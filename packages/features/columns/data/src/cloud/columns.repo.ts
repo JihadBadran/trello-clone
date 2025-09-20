@@ -1,9 +1,9 @@
-import type { ColumnsRepo } from '@tc/columns/domain';
 import { supabase } from '@tc/infra/supabase';
-import { PushResult, PullResult, ISODateTime } from '@tc/infra/sync-cloud';
+import { PushResult, PullResult, ISODateTime } from '@tc/foundation/types';
 import { Column } from '@tc/columns/domain';
 import { OutboxItem } from "@tc/foundation/types";
-export const ColumnsRepoSupabase: ColumnsRepo = {
+
+export const ColumnsRepoSupabase = {
   async get(id: Column['id']) {
     const { data, error } = await supabase
       .from('columns')
@@ -75,7 +75,7 @@ export const ColumnsRepoSupabase: ColumnsRepo = {
       deletedAt: c.deleted_at,
     })) ?? [];
     const newCursor = data && data.length ? data[data.length - 1].updated_at : since ?? undefined;
-    return { ok: true, rows, cursor: newCursor };
+    return { ok: true, rows, cursor: newCursor as ISODateTime };
   },
   async applyFromCloud(row: Column): Promise<void> {
     await this.upsert(row);

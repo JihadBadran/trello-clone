@@ -1,16 +1,6 @@
 import { MultiSyncController } from './controller';
-import { IdbOutbox, getCursor, setCursor } from '@tc/infra/idb';
-import type { ChannelConfig, CursorApi, ISODateTime } from './types';
-
-// A compliant IdbCursor that handles multiple topics as required by CursorApi.
-class MultiTopicIdbCursor implements CursorApi {
-  get(topic: string): Promise<string | null> {
-    return getCursor(topic);
-  }
-  set(topic: string, value: ISODateTime): Promise<void> {
-    return setCursor(topic, value);
-  }
-}
+import { IdbCursor, IdbOutbox } from '@tc/infra/idb';
+import type { ChannelConfig } from '@tc/foundation/types';
 
 export type SyncConfig = {
   channels: Record<string, ChannelConfig>;
@@ -29,7 +19,7 @@ export function createAndStartSync(config: SyncConfig): () => void {
   const controller = new MultiSyncController({
     channels: config.channels,
     outbox: new IdbOutbox(),
-    cursor: new MultiTopicIdbCursor(),
+    cursor: new IdbCursor(),
     schedule: (fn: () => void, ms: number) => {
       const id = setTimeout(fn, ms);
       return { cancel: () => clearTimeout(id) };

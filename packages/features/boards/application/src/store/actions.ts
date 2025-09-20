@@ -2,7 +2,7 @@ import type { StoreApi } from 'zustand';
 import type { Action, ActionImpl } from '@tc/foundation/actions';
 import { withActionsSlice, type SliceActionsApi } from '@tc/infra/store';
 import { createBoardsSlice } from './boards.slice';
-import { boardsRepoIDB, BoardsRepoIDB } from '@tc/boards/data';
+import { boardsRepoIDB, BoardsRepoIDB, BoardsRepoSupabase } from '@tc/boards/data';
 import { Board, BoardsSlice } from '@tc/boards/domain';
 
 /** Context handed to handlers */
@@ -40,9 +40,11 @@ export function registerBoardsActions(store: StoreApi<BoardsStore>) {
     toLocal: ({ api }, { payload }: Action<Board>) => {
       api.getState().upsertBoard({ ...payload, is_archived: false, updated_at: new Date().toISOString() });
     },
-    toPersist: async ({ repos }, { payload, type }: Action<Board>) => {
-      console.log("toPersist createBoard: ", payload, type);
-      await repos.boards.upsert({ ...payload, is_archived: false, updated_at: new Date().toISOString() });
+    toPersist: async ({ repos }, { payload }: Action<Board>) => {
+      await (repos.boards as BoardsRepoIDB).putLocal({ ...payload, is_archived: false, updated_at: new Date().toISOString() });
+    },
+    toCloud: async (_, { payload }: Action<Board>) => {
+      await BoardsRepoSupabase.upsert({ ...payload, is_archived: false, updated_at: new Date().toISOString() });
     },
   };
 
@@ -54,7 +56,14 @@ export function registerBoardsActions(store: StoreApi<BoardsStore>) {
       api.getState().upsertBoard({ ...b, is_archived: true, updated_at: new Date().toISOString() });
     },
     toPersist: async ({ repos }, { payload }: Action<{ id: string }>) => {
-      await repos.boards.archive(payload.id);
+      const b = await repos.boards.get(payload.id);
+      if (!b) return;
+      await (repos.boards as BoardsRepoIDB).putLocal({ ...b, is_archived: true, updated_at: new Date().toISOString() });
+    },
+    toCloud: async ({ repos }, { payload }: Action<{ id: string }>) => {
+      const b = await repos.boards.get(payload.id);
+      if (!b) return;
+      await BoardsRepoSupabase.upsert({ ...b, is_archived: true, updated_at: new Date().toISOString() });
     },
   };
 
@@ -63,7 +72,10 @@ export function registerBoardsActions(store: StoreApi<BoardsStore>) {
       api.getState().upsertBoard({ ...payload, updated_at: new Date().toISOString() });
     },
     toPersist: async ({ repos }, { payload }: Action<Board>) => {
-      await repos.boards.upsert({ ...payload, updated_at: new Date().toISOString() });
+      await (repos.boards as BoardsRepoIDB).putLocal({ ...payload, updated_at: new Date().toISOString() });
+    },
+    toCloud: async (_, { payload }: Action<Board>) => {
+      await BoardsRepoSupabase.upsert({ ...payload, updated_at: new Date().toISOString() });
     },
   };
 

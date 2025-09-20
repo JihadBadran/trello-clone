@@ -1,4 +1,4 @@
-import type { OutboxApi } from '@tc/infra/sync-cloud';
+import type { OutboxApi } from '@tc/foundation/types';
 import { readOutbox, clearOutbox } from './outbox';
 
 export class IdbOutbox implements OutboxApi {

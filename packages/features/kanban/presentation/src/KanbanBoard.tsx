@@ -18,6 +18,7 @@ import {
   useKanbanCards,
   useKanbanColumns,
   useKanbanDispatch,
+  useRefreshKanban,
 } from '@tc/kanban/application-react';
 import { Button, Input } from '@tc/uikit';
 import {
@@ -25,32 +26,17 @@ import {
   DialogHeader,
   DialogTrigger,
 } from '@tc/uikit/components/ui/dialog';
-import { Columns3Cog, User, Edit } from '@tc/uikit/icons';
+import { Columns3Cog, User, Edit, RefreshCw } from '@tc/uikit/icons';
 import { KanbanProvider as DndKanbanProvider } from './lib/KanbanProvider';
 import { IdCardIcon } from '@tc/uikit/icons';
-// Helper to find the new position of a card after being moved
-const getNewPosition = (
-  cards: { id: string; position: number }[],
-  oldIndex: number,
-  newIndex: number
-): number => {
-  if (newIndex < 0 || oldIndex < 0) return 0;
-  if (newIndex === 0) {
-    return cards.length > 0 ? cards[0].position / 2 : 1024;
-  }
-  if (newIndex >= cards.length) {
-    return cards[cards.length - 1].position + 1024;
-  }
-  const prevCard = cards[newIndex - 1];
-  const nextCard = cards[newIndex];
-  return (prevCard.position + nextCard.position) / 2;
-};
 
 const KanbanBoardInternal = ({ boardId }: { boardId: string }) => {
   const dispatch = useKanbanDispatch();
   const board = useKanbanBoard(boardId);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [newBoardTitle, setNewBoardTitle] = useState(board?.title || '');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const refresh = useRefreshKanban();
   const session = kanbanStore((s) => s.session);
 
   useEffect(() => {
@@ -73,36 +59,40 @@ const KanbanBoardInternal = ({ boardId }: { boardId: string }) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const activeCard = cards.find((c) => c.id === active.id);
     const overCard = cards.find((c) => c.id === over.id);
     const overColumn = cols.find((c) => c.id === over.id);
 
-    if (!activeCard) return;
+    if (!overCard && !overColumn) return;
 
-    const targetcolumn_id = overCard?.column_id || overColumn?.id;
-    if (!targetcolumn_id) return;
+    const targetColumnId = overCard ? overCard.column_id : (over.id as string);
 
-    const cardsInTargetColumn = cards
-      .filter((c) => c.column_id === targetcolumn_id)
-      .sort((a, b) => a.position - b.position);
+    if (!targetColumnId) return;
 
-    const oldIndex = cardsInTargetColumn.findIndex((c) => c.id === active.id);
-    const newIndex = cardsInTargetColumn.findIndex((c) => c.id === over.id);
+    let overCardId: string | undefined = undefined;
+    let place: 'before' | 'after' | undefined = undefined;
 
-    const newPosition = getNewPosition(cardsInTargetColumn, oldIndex, newIndex);
-
-    // we should reorder all cards in the column
-    // const reorderedCards = cardsInTargetColumn.map((c, index) => ({
-    //   ...c,
-    //   position: index,
-    // }));
+    if (overCard) {
+      overCardId = overCard.id;
+      const activeRect = event.active.rect.current.translated || event.active.rect.current.initial;
+      const overRect = event.over?.rect;
+      if (activeRect && overRect) {
+        const isAfter = (activeRect.top + activeRect.height / 2) > (overRect.top + overRect.height / 2);
+        place = isAfter ? 'after' : 'before';
+      } else {
+        place = 'after';
+      }
+    } else {
+      // Dropped on a column itself; append to end
+      place = 'after';
+    }
 
     dispatch({
-      type: 'cards/upsert',
+      type: 'cards/move',
       payload: {
-        ...activeCard,
-        column_id: targetcolumn_id,
-        position: newPosition,
+        cardId: active.id as string,
+        targetColumnId,
+        overCardId,
+        place,
       },
     });
   };
@@ -157,7 +147,9 @@ const KanbanBoardInternal = ({ boardId }: { boardId: string }) => {
           )}
         </h1>
         <div className="flex-shrink-0 gap-3 flex items-center">
-          <BoardCollaborators boardId={boardId} />
+          <div className="flex-1">
+            <BoardCollaborators boardId={boardId} />
+          </div>
           <Dialog>
             <DialogTrigger asChild>
               <Button variant="default">
@@ -172,6 +164,18 @@ const KanbanBoardInternal = ({ boardId }: { boardId: string }) => {
               <CreateColumnForm boardId={boardId} />
             </DialogContent>
           </Dialog>
+
+          <Button
+            variant="default"
+            disabled={isRefreshing}
+            onClick={async () => {
+              setIsRefreshing(true);
+              await refresh();
+              setIsRefreshing(false);
+            }}
+          >
+            <RefreshCw className={`size-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+          </Button>
 
           <Dialog>
             <DialogTrigger asChild>
@@ -200,6 +204,22 @@ const KanbanBoardInternal = ({ boardId }: { boardId: string }) => {
             const column = cols.find((c) => c.id === col.id);
             if (!column) return null;
 
+            const ColumnCardsWithHint = ({ columnId }: { columnId: string }) => {
+              return (
+                <KanbanCards
+                  items={kanbanCards
+                    .filter((c) => c.column === columnId)
+                    .sort((a, b) => a.position - b.position)}
+                  columnId={columnId}
+                  className="flex-1"
+                >
+                  {(card) => (
+                    <KanbanCard {...card} name={card.name} key={card.id} />
+                  )}
+                </KanbanCards>
+              );
+            };
+
             return (
               <KanbanColumn
                 className="flex-grow min-w-[300px]"
@@ -214,15 +234,7 @@ const KanbanBoardInternal = ({ boardId }: { boardId: string }) => {
                 >
                   {col.name}
                 </KanbanHeader>
-                <KanbanCards
-                  items={kanbanCards.filter((c) => c.column === col.id)}
-                  columnId={col.id}
-                  className="flex-1"
-                >
-                  {(card) => (
-                    <KanbanCard {...card} name={card.name} key={card.id} />
-                  )}
-                </KanbanCards>
+                <ColumnCardsWithHint columnId={col.id} />
                 <Dialog>
                   <DialogTrigger className="m-3 hover:bg-accent p-3 border border-primary border-dashed rounded font-bold text-md flex items-center gap-2 justify-center">
                     <IdCardIcon className="size-6" />
@@ -241,9 +253,10 @@ const KanbanBoardInternal = ({ boardId }: { boardId: string }) => {
                             (c) => c.column_id === col.id && !c.deleted_at
                           )
                           .sort((a, b) => a.position - b.position);
+                        const STEP = 100;
                         return cardsInCol.length > 0
-                          ? cardsInCol[cardsInCol.length - 1].position + 1024
-                          : 1024;
+                          ? cardsInCol[cardsInCol.length - 1].position + STEP
+                          : STEP;
                       }}
                       onCreate={(payload) =>
                         dispatch({ type: 'cards/upsert', payload })

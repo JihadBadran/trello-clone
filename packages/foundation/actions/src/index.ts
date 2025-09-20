@@ -10,6 +10,8 @@ export type Action<T = Record<string, unknown>> = {
 export type ActionImpl<A extends Action, Ctx> = {
   // Optimistic update to the local store
   toLocal?: (ctx: Ctx, action: A) => void | Promise<void>;
-  // Persist changes to the database and enqueue for cloud sync
+  // Persist changes to the local database (e.g., IndexedDB)
   toPersist?: (ctx: Ctx, action: A) => void | Promise<void>;
+  // Eagerly push changes to the cloud, bypassing the outbox
+  toCloud?: (ctx: Ctx, action: A) => void | Promise<void>;
 };

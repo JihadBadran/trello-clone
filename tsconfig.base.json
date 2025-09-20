@@ -62,6 +62,7 @@
       "@tc/infra/store": ["packages/infra/store/src/index.ts"],
       "@tc/infra/supabase": ["packages/infra/supabase/src/index.ts"],
       "@tc/infra/sync-cloud": ["packages/infra/sync-cloud/src/index.ts"],
+      "@tc/infra/dnd": ["packages/infra/dnd/src/index.ts"],
       "@tc/infra/sync-tabs": ["packages/infra/sync-tabs/src/index.ts"],
       "@tc/kanban/application": [
         "packages/features/kanban/application/src/index.ts"

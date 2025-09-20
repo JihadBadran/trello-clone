@@ -1,10 +1,10 @@
 import { STORES, getAll, put, del, get as idbGet } from '@tc/infra/idb';
 import { enqueue } from '@tc/infra/idb';
-import type { Column, ColumnsRepo } from '@tc/columns/domain';
-import { PushResult, PullResult } from '@tc/infra/sync-cloud';
+import type { Column } from '@tc/columns/domain';
+import { PushResult, PullResult, FeatureRepo, ISODateTime } from '@tc/foundation/types';
 import { OutboxItem } from "@tc/foundation/types";
 
-export class ColumnsRepoIDB implements ColumnsRepo {
+export class ColumnsRepoIDB implements FeatureRepo<Column> {
   public onApply?: (item: Column) => void;
 
   constructor(onApply?: (item: Column) => void) {
@@ -18,13 +18,25 @@ export class ColumnsRepoIDB implements ColumnsRepo {
     const rows = await getAll(STORES.COLUMNS);
     return { ok: true, rows };
   }
-  async upsert(c: Column) {
+  async putLocal(c: Column) {
     await put(STORES.COLUMNS, c);
+  }
+  async enqueueUpsert(c: Column) {
     await enqueue('columns', 'upsert', c);
   }
-  async remove(id: string): Promise<void> {
+  async upsert(c: Column) {
+    await this.putLocal(c);
+    await this.enqueueUpsert(c);
+  }
+  async removeLocal(id: string): Promise<void> {
     await del(STORES.COLUMNS, id);
+  }
+  async enqueueRemove(id: string): Promise<void> {
     await enqueue('columns', 'remove', { id });
+  }
+  async remove(id: string): Promise<void> {
+    await this.removeLocal(id);
+    await this.enqueueRemove(id);
   }
   async applyFromCloud(row: Column): Promise<void> {
     await put(STORES.COLUMNS, row);
@@ -36,7 +48,7 @@ export class ColumnsRepoIDB implements ColumnsRepo {
   }
   async pullSince(since: string | null, limit: number) {
     console.log('pulling columns since', since, limit);
-    return Promise.resolve({ ok: true, rows: [], cursor: new Date().toISOString() });
+    return Promise.resolve({ ok: true, rows: [], cursor: new Date().toISOString() as ISODateTime });
   }
 };
 

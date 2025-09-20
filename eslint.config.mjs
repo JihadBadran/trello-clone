@@ -28,6 +28,7 @@ export default [
         },
       ],
       "@typescript-eslint/no-empty-function": "off",
+      "no-empty-pattern": "off",
     },
   },
   {

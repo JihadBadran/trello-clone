@@ -24,7 +24,7 @@ import { boardsRepoIDB } from '@tc/boards/data';
 import { columnsRepoIDB } from '@tc/columns/data';
 
 // 1. The Combined State Shape
-export type KanbanState = BoardsSlice & ColumnsSlice & CardsSlice & { repos: {
+export type KanbanState = BoardsSlice & ColumnsSlice & CardsSlice & { moveCard: (cardId: string, targetColumnId: string, overCardId?: string, place?: 'before' | 'after') => void; repos: {
     boards: BoardsRepoIDB;
     columns: ColumnsRepoIDB;
     cards: CardsRepoIDB;
@@ -64,6 +64,66 @@ const createKanbanSlice: StateCreator<KanbanState, [], []> = (set, get, api) => 
   ...createBoardsSlice(set, get, api),
   ...createColumnsSlice(set, get, api),
   ...createCardsSlice(set, get, api),
+  moveCard: (cardId: string, targetColumnId: string, overCardId?: string, place: 'before' | 'after' = 'after') => {
+    const { cards, upsertCard } = get();
+    const cardToMove = cards[cardId];
+    if (!cardToMove) return;
+
+    const cardsInTargetColumn = Object.values(cards)
+      .filter(c => c.column_id === targetColumnId && c.id !== cardId)
+      .sort((a, b) => a.position - b.position);
+    const STEP = 100;
+    const endPos = () => (cardsInTargetColumn[cardsInTargetColumn.length - 1]?.position || 0) + STEP;
+
+    let newPosition: number;
+
+    if (overCardId) {
+      const overIndex = cardsInTargetColumn.findIndex(c => c.id === overCardId);
+      if (overIndex === -1) {
+        newPosition = endPos();
+      } else {
+        const overCard = cardsInTargetColumn[overIndex];
+        if (place === 'before') {
+          const prev = cardsInTargetColumn[overIndex - 1];
+          newPosition = prev ? (prev.position + overCard.position) / 2 : (overCard.position - STEP / 2);
+        } else {
+          const next = cardsInTargetColumn[overIndex + 1];
+          newPosition = next ? (overCard.position + next.position) / 2 : (overCard.position + STEP / 2);
+        }
+      }
+    } else {
+      newPosition = endPos();
+    }
+
+    // Apply the move
+    upsertCard({
+      ...cardToMove,
+      column_id: targetColumnId,
+      position: newPosition,
+    });
+
+    // Optional normalization if gaps are too tight
+    const withMoved = [
+      ...cardsInTargetColumn,
+      { ...cardToMove, column_id: targetColumnId, position: newPosition },
+    ].sort((a, b) => a.position - b.position);
+
+    let needRebalance = false;
+    for (let i = 1; i < withMoved.length; i++) {
+      if (Math.abs(withMoved[i].position - withMoved[i - 1].position) < 1) {
+        needRebalance = true;
+        break;
+      }
+    }
+
+    if (needRebalance) {
+      let pos = STEP;
+      for (const c of withMoved) {
+        upsertCard({ ...c, position: pos });
+        pos += STEP;
+      }
+    }
+  }
   }
 };
 

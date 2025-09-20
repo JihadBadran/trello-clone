@@ -1,26 +1,22 @@
-import React, { useEffect } from 'react';
-import { makeKanbanStore } from '@tc/kanban/application';
-import { tabSync } from '@tc/infra/sync-tabs';
-import { createAndStartSync } from '@tc/infra/sync-cloud';
 import type { Action } from '@tc/foundation/actions';
+import { createAndStartSync } from '@tc/infra/sync-cloud';
+import { tabSync } from '@tc/infra/sync-tabs';
+import { makeKanbanStore } from '@tc/kanban/application';
+import React, { useEffect } from 'react';
 
 // Import repos for hydration and sync
+import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import {
-  BoardsRepoSupabase,
-  subscribeBoardsRealtime,
+  BoardsRepoSupabase
 } from '@tc/boards/data';
-import {
-  ColumnsRepoSupabase,
-  subscribeColumns,
-} from '@tc/columns/data';
 import {
   CardsRepoSupabase,
   subscribeCardRealtime,
 } from '@tc/cards/data';
-import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
-import type { Board } from '@tc/boards/domain';
-import type { Column } from '@tc/columns/domain';
 import type { Card } from '@tc/cards/domain';
+import {
+  ColumnsRepoSupabase
+} from '@tc/columns/data';
 import { supabase } from '@tc/infra/supabase';
 
 // 1. Create the store as a module-level singleton
@@ -81,33 +77,45 @@ function useRealtimeSync() {
   const upsertBoard = kanbanStore((s) => s.upsertBoard);
   const upsertColumn = kanbanStore((s) => s.upsertColumn);
   const upsertCard = kanbanStore((s) => s.upsertCard);
+  console.log('[kanban] useRealtimeSync 0', { boardId });
+  const ch = supabase.channel(`cards:${boardId}`, {
+    config: { broadcast: { self: false } },
+  });
 
   useEffect(() => {
+    console.log('[kanban] useRealtimeSync 1', { boardId });
     if (!boardId) return;
+    console.log('[kanban] useRealtimeSync 2', { boardId });
 
-    const subscriptions = [
-      subscribeBoardsRealtime((msg: RealtimePostgresChangesPayload<Board>) => {
+
+    // subscribeBoardsRealtime(ch, (msg: RealtimePostgresChangesPayload<Board>) => {
+    //   const row = msg.new ?? msg.old;
+    //   if (row) upsertBoard(row as Board);
+    // }),
+    // subscribeColumns(
+    //   boardId,
+    //   ch,
+    //   (msg: RealtimePostgresChangesPayload<Column>) => {
+    //     const row = msg.new ?? msg.old;
+    //     if (row) upsertColumn(row as Column);
+    //   }
+    // ),
+    subscribeCardRealtime(
+      boardId,
+      ch,
+      (msg: RealtimePostgresChangesPayload<Card>) => {
+        console.log('[kanban] useRealtimeSync 4', { boardId });
         const row = msg.new ?? msg.old;
-        if (row) upsertBoard(row as Board);
-      }),
-      subscribeColumns(
-        boardId,
-        (msg: RealtimePostgresChangesPayload<Column>) => {
-          const row = msg.new ?? msg.old;
-          if (row) upsertColumn(row as Column);
-        }
-      ),
-      subscribeCardRealtime(
-        boardId,
-        (msg: RealtimePostgresChangesPayload<Card>) => {
-          const row = msg.new ?? msg.old;
-          if (row) upsertCard(row as Card);
-        }
-      ),
-    ];
+        if (row) upsertCard(row as Card);
+      }
+    )
+
+    ch.subscribe((status) => {
+      console.log('subscribeCardRealtime => status', status)
+    });
 
     return () => {
-      subscriptions.forEach((unsub) => unsub());
+      ch.unsubscribe();
     };
   }, [boardId, upsertBoard, upsertColumn, upsertCard]);
 }
@@ -130,12 +138,27 @@ function useTabSync(
 }
 
 // 3. The Provider component now just orchestrates hooks and renders children
+export const refreshKanbanData = async () => {
+  const store = kanbanStore.getState();
+  const [boardsResult, columnsResult, cardsResult] = await Promise.all([
+    BoardsRepoSupabase.getAll(),
+    ColumnsRepoSupabase.getAll(),
+    CardsRepoSupabase.getAll(),
+  ]);
+
+  if (boardsResult.ok && boardsResult.rows) {
+    store.hydrateBoards(boardsResult.rows);
+  }
+  if (columnsResult.ok && columnsResult.rows) {
+    store.hydrateColumns(columnsResult.rows);
+  }
+  if (cardsResult.ok && cardsResult.rows) {
+    store.hydrateCards(cardsResult.rows);
+  }
+};
+
 export const KanbanProvider = ({ children }: { children: React.ReactNode }) => {
-  const repos = kanbanStore((s) => s.repos);
   const dispatch = kanbanStore((s) => s.dispatch);
-  const hydrateBoards = kanbanStore((s) => s.hydrateBoards);
-  const hydrateColumns = kanbanStore((s) => s.hydrateColumns);
-  const hydrateCards = kanbanStore((s) => s.hydrateCards);
   const setHydrated = kanbanStore((s) => s.setHydrated);
   const setSession = kanbanStore((s) => s.setSession);
 
@@ -157,26 +180,10 @@ export const KanbanProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     (async () => {
-      if (!repos) return;
-      const [boardsResult, columnsResult, cardsResult] = await Promise.all([
-        repos.boards.getAll(),
-        repos.columns.getAll(),
-        repos.cards.getAll(),
-      ]);
-
-      if (boardsResult.ok && boardsResult.rows) {
-        hydrateBoards(boardsResult.rows);
-      }
-      if (columnsResult.ok && columnsResult.rows) {
-        hydrateColumns(columnsResult.rows);
-      }
-      if (cardsResult.ok && cardsResult.rows) {
-        hydrateCards(cardsResult.rows);
-      }
-
+      await refreshKanbanData();
       setHydrated(true);
     })();
-  }, [repos, hydrateBoards, hydrateColumns, hydrateCards, setHydrated]);
+  }, [setHydrated]);
 
   return <>{children}</>;
 };

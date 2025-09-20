@@ -1,10 +1,9 @@
-import type { CardsRepo } from '@tc/cards/domain';
 import type { Card } from '@tc/cards/domain';
 import { supabase } from '@tc/infra/supabase';
-import { PushResult, PullResult, ISODateTime } from '@tc/infra/sync-cloud';
-import {OutboxItem} from "@tc/foundation/types";
+import { PushResult, PullResult, ISODateTime } from '@tc/foundation/types';
+import { OutboxItem } from "@tc/foundation/types";
 
-export const CardsRepoSupabase: CardsRepo = {
+export const CardsRepoSupabase = {
   async get(id: Card['id']) {
     const { data, error } = await supabase
       .from('cards')
@@ -61,7 +60,7 @@ export const CardsRepoSupabase: CardsRepo = {
     if (error) throw error;
     const rows = data ?? [];
     const newCursor = data && data.length ? data[data.length - 1].updated_at : since ?? undefined;
-    return { ok: true, rows, cursor: newCursor };
+    return { ok: true, rows, cursor: newCursor as ISODateTime };
   },
   async applyFromCloud(row: Card): Promise<void> {
     await this.upsert(row);

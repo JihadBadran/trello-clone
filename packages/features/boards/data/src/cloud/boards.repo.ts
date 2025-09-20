@@ -1,10 +1,9 @@
-import type { BoardsRepo } from '../ports';
 import type { Board } from '@tc/boards/domain';
 import { supabase } from '@tc/infra/supabase';
-import { PushResult, PullResult, ISODateTime } from '@tc/infra/sync-cloud';
+import { PushResult, PullResult, ISODateTime } from '@tc/foundation/types';
 import { OutboxItem } from '@tc/foundation/types';
 
-export const BoardsRepoSupabase: BoardsRepo = {
+export const BoardsRepoSupabase = {
   async get(id: Board['id']) {
     const { data, error } = await supabase
       .from('boards')
@@ -80,7 +79,7 @@ export const BoardsRepoSupabase: BoardsRepo = {
     return {
       ok: true,
       rows,
-      cursor: newCursor,
+      cursor: newCursor as ISODateTime,
     };
   },
   async applyFromCloud(row: Board): Promise<void> {
