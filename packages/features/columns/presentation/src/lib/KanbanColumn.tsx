@@ -44,21 +44,27 @@ export const KanbanHeader = ({ children, boardId, column, columns, dispatch, cla
   const [newTitle, setNewTitle] = useState(column.title);
 
   const handleMove = (direction: 'left' | 'right') => {
-    const sortedColumns = [...columns].sort((a, b) => a.position - b.position);
-    const currentIndex = sortedColumns.findIndex(c => c.id === column.id);
-    const newIndex = direction === 'left' ? currentIndex - 1 : currentIndex + 1;
+    const sorted = [...columns].sort((a, b) => a.position - b.position);
+    const curIdx = sorted.findIndex(c => c.id === column.id);
+    const overIdx = direction === 'left' ? curIdx - 1 : curIdx + 1;
 
-    if (newIndex < 0 || newIndex >= sortedColumns.length) return;
+    if (overIdx < 0 || overIdx >= sorted.length) return;
 
-    const newPosition = (sortedColumns[newIndex].position + (sortedColumns[newIndex + (direction === 'left' ? 1 : -1)]?.position || sortedColumns[newIndex].position + (direction === 'left' ? -1024 : 1024))) / 2;
+    const STEP = 100;
+    const over = sorted[overIdx];
+    let newPosition: number;
+
+    if (direction === 'left') {
+      const prev = sorted[overIdx - 1];
+      newPosition = prev ? (prev.position + over.position) / 2 : (over.position - STEP / 2);
+    } else {
+      const next = sorted[overIdx + 1];
+      newPosition = next ? (over.position + next.position) / 2 : (over.position + STEP / 2);
+    }
 
     dispatch({
-      type: 'columns/resequence',
-      payload: {
-        boardId,
-        columnId: column.id,
-        newPosition,
-      },
+      type: 'columns/update',
+      payload: { ...column, position: Math.floor(newPosition) },
     });
   };
 

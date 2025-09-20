@@ -23,7 +23,8 @@ export function CreateColumnForm({
     const cols = Object.values(s.columns)
       .filter((c) => c.board_id === boardId && !c.deleted_at)
       .sort((a, b) => a.position - b.position);
-    return cols.length > 0 ? cols[cols.length - 1].position + 1024 : 1024;
+    const STEP = 100;
+    return cols.length > 0 ? cols[cols.length - 1].position + STEP : STEP;
   });
 
   const handleSubmit = (e: React.FormEvent) => {

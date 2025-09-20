@@ -78,8 +78,8 @@ function useRealtimeSync() {
   const upsertColumn = kanbanStore((s) => s.upsertColumn);
   const upsertCard = kanbanStore((s) => s.upsertCard);
   console.log('[kanban] useRealtimeSync 0', { boardId });
-  const ch = supabase.channel(`cards:${boardId}`, {
-    config: { broadcast: { self: false } },
+  const ch = supabase.channel(`all-cards`, {
+    config: { broadcast: { self: true } },
   });
 
   useEffect(() => {

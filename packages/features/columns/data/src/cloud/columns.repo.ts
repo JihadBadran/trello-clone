@@ -21,7 +21,7 @@ export const ColumnsRepoSupabase = {
     if (error) {
       return { ok: false, error };
     }
-    const rows = data?.map(c => ({...c, board_id: c.board_id, createdAt: c.created_at, updatedAt: c.updated_at, deletedAt: c.deleted_at})) ?? [];
+    const rows = data ?? [];
     return { ok: true, rows };
   },
   async upsert(c: Column) {
@@ -67,13 +67,7 @@ export const ColumnsRepoSupabase = {
 
     const { data, error } = await q;
     if (error) throw error;
-    const rows = data?.map(c => ({
-      ...c,
-      board_id: c.board_id,
-      createdAt: c.created_at,
-      updatedAt: c.updated_at,
-      deletedAt: c.deleted_at,
-    })) ?? [];
+    const rows = data ?? [];
     const newCursor = data && data.length ? data[data.length - 1].updated_at : since ?? undefined;
     return { ok: true, rows, cursor: newCursor as ISODateTime };
   },
