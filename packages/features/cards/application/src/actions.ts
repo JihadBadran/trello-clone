@@ -64,31 +64,49 @@ export function registerCardsActions(store: StoreApi<CardsStore>) {
     },
   };
 
-  const moveCard: ActionImpl<{ type: 'cards/move'; payload: { cardId: string, targetColumnId: string, position: number } }, CardsCtx> = {
+  const moveCard: ActionImpl<{ type: 'cards/move'; payload: { cardId: string, targetColumnId: string, position: number, withRepositioning?: boolean } }, CardsCtx> = {
     toLocal: ({ api }, { payload }) => {
-      console.log('toLocal Moving card', payload.cardId, 'to column', payload.targetColumnId, 'at position', payload.position, api.getState().moveCard);
+      console.log('toLocal Moving card', { cardId: payload.cardId, targetColumnId: payload.targetColumnId, position: payload.position, withRepositioning: payload.withRepositioning });
 
-      api.getState().moveCard(payload.cardId, payload.targetColumnId, payload.position);
+      api.getState().moveCard(payload.cardId, payload.targetColumnId, payload.position, payload.withRepositioning);
     },
     toPersist: async ({ api, repos }, { payload }) => {
       const state = api.getState();
       const card = state.cards?.[payload.cardId];
       if (!card) return;
-      const updatedCard = { ...card, column_id: payload.targetColumnId, position: payload.position, updated_at: new Date().toISOString() as ISODateTime };
-      await repos.cards.putLocal(updatedCard);
-      await repos.cards.enqueueUpsert(updatedCard);
+      if (!payload.withRepositioning) {
+        const updatedCard = { ...card, column_id: payload.targetColumnId, position: payload.position, updated_at: new Date().toISOString() as ISODateTime };
+        await repos.cards.putLocal(updatedCard);
+        await repos.cards.enqueueUpsert(updatedCard);
+      } else {
+        // loop over all cards in the target column and update their position
+        const cardsInTargetColumn = Object.values(state.cards).filter((c) => c.column_id === payload.targetColumnId);
+        const updatedCards = cardsInTargetColumn.map((c, index) => ({ ...c, position: index * 100 }));
+        for (const c of updatedCards) {
+          await repos.cards.putLocal(c);
+          await repos.cards.enqueueUpsert(c);
+        }
+      }
     },
     toCloud: async ({ api }, { payload }) => {
-      const state = api.getState() as any;
+      const state = api.getState();
       const card = state.cards?.[payload.cardId];
       if (!card) return;
-      await CardsRepoSupabase.upsert({ ...card, updated_at: new Date().toISOString() as ISODateTime });
+      if (!payload.withRepositioning) {
+        await CardsRepoSupabase.upsert({ ...card, updated_at: new Date().toISOString() as ISODateTime });
+      } else {
+        const cardsInTargetColumn = Object.values(state.cards).filter((c) => c.column_id === payload.targetColumnId);
+        const updatedCards = cardsInTargetColumn.map((c, index) => ({ ...c, position: index * 100 }));
+        for (const c of updatedCards) {
+          await CardsRepoSupabase.upsert(c);
+        }
+      }
     },
   };
 
-  register('cards/upsert', upsertCard as any);
-  register('cards/delete', deleteCard as any);
-  register('cards/move', moveCard as any);
+  register('cards/upsert', upsertCard);
+  register('cards/delete', deleteCard);
+  register('cards/move', moveCard);
 }
 
 /** Convenience factory to build a standalone Cards store */
@@ -96,4 +114,4 @@ export const makeCardsStore = (deps: { publish: CardsCtx['publish']; tabId: stri
   ((set: StoreApi<CardsStore>['setState'], get: StoreApi<CardsStore>['getState'], api: StoreApi<CardsStore> & SliceActionsApi<CardsCtx>) => {
     const withMw = withCardsActions(deps)(createCardsSlice as any);
     return withMw(set, get, api);
-  }) as any;
+  });

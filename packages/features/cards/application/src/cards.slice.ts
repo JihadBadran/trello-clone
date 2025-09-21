@@ -6,17 +6,28 @@ export type CardsSlice = {
   hydrateCards: (cards: Card[]) => void;
   upsertCard: (card: Card) => void;
   removeCard: (id: string) => void;
-  moveCard: (cardId: string, targetColumnId: string, newPosition: number) => void;
+  moveCard: (cardId: string, targetColumnId: string, newPosition: number, withRepositioning?: boolean) => void;
 };
 
-export const createCardsSlice: StateCreator<CardsSlice, [], [], CardsSlice> = (set) => ({
+export const createCardsSlice: StateCreator<CardsSlice, [], [], CardsSlice> = (set, get) => ({
   cards: {},
-  moveCard: (cardId: string, targetColumnId: string, newPosition: number) => {
+  moveCard: (cardId: string, targetColumnId: string, newPosition: number, withRepositioning = false) => {
     console.log('Moving card', cardId, 'to column', targetColumnId, 'at position', newPosition);
-    set((state) => {
-      const { [cardId]: card, ...rest } = state.cards;
-      return { cards: { ...rest, [cardId]: { ...card, column_id: targetColumnId, position: newPosition } } };
-    });
+    if (withRepositioning) {
+      // loop over all cards in the target column and update their position
+      const cardsInTargetColumn = Object.values(get().cards).filter((c) => c.column_id === targetColumnId);
+      const updatedCards = cardsInTargetColumn.map((c, index) => ({ ...c, position: index * 100 }));
+      updatedCards.forEach((c) => {
+        set((state) => ({
+          cards: { ...state.cards, [c.id]: c },
+        }));
+      });
+    } else {
+      set((state) => {
+        const { [cardId]: card, ...rest } = state.cards;
+        return { cards: { ...rest, [cardId]: { ...card, column_id: targetColumnId, position: newPosition } } };
+      });
+    }
   },
   hydrateCards: (cards: Card[]) =>
     set({

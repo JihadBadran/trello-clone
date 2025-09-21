@@ -27,7 +27,6 @@ export type KanbanCardProps<T extends KanbanItemBase = KanbanItemBase> = T & {
 
 export const KanbanCard = <T extends KanbanItemBase = KanbanItemBase>({
   name,
-  position,
   children,
   className,
 }: KanbanCardProps<T>) => {
@@ -39,7 +38,7 @@ export const KanbanCard = <T extends KanbanItemBase = KanbanItemBase>({
       )}
     >
       <CardHeader className="flex gap-2 items-center">
-        <CardTitle>{name} - {position}</CardTitle>
+        <CardTitle>{name}</CardTitle>
       </CardHeader>
       <CardContent>{children}</CardContent>
     </Card>

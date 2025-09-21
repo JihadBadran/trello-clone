@@ -1,22 +1,24 @@
 import React, { useContext, useEffect, useMemo } from 'react';
-import { makeCardsStore, registerCardsActions, type CardsStore } from '@tc/cards/application';
-import { CardsRepoIDB, CardsRepoSupabase } from '@tc/cards/data';
+import { makeCardsStore, registerCardsActions, type CardsStore, type CardsCtx } from '@tc/cards/application';
+import { cardsRepoIDB, CardsRepoSupabase } from '@tc/cards/data';
 import { createFeatureStore } from '@tc/infra/store';
+import type { Action } from '@tc/foundation/actions';
+import type { Card } from '@tc/cards/domain';
 
 type CardsContext = {
   store: import('zustand').StoreApi<CardsStore>;
-  dispatch: (action: { type: string; payload: any; meta?: any }) => Promise<void>;
+  dispatch: (action: Action, options?: { localOnly?: boolean }) => Promise<void>;
   isLeader: boolean;
 };
 
-export const CardsCtx = React.createContext<CardsContext | null>(null);
+export const CardsContext = React.createContext<CardsContext | null>(null);
 
 export const CardsProvider = ({ children }: { children: React.ReactNode }) => {
   const feature = useMemo(() => {
-    return createFeatureStore({
-      makeStore: makeCardsStore,
+    return createFeatureStore<CardsStore, CardsCtx, Card, typeof cardsRepoIDB>({
+      makeStore: makeCardsStore as any,
       registerActions: registerCardsActions,
-      localRepo: CardsRepoIDB,
+      localRepo: cardsRepoIDB,
       cloudRepo: CardsRepoSupabase,
       hydrateFnName: 'hydrateCards',
       topic: 'cards',
@@ -27,22 +29,21 @@ export const CardsProvider = ({ children }: { children: React.ReactNode }) => {
     return () => feature.cleanup();
   }, [feature]);
 
-  return <CardsCtx.Provider value={{ store: feature.store, dispatch: feature.store.getState().dispatch, isLeader: feature.isLeader() }}>
+  return <CardsContext.Provider value={{ store: feature.store, dispatch: feature.store.getState().dispatch, isLeader: feature.isLeader() }}>
     {children}
-  </CardsCtx.Provider>;
+  </CardsContext.Provider>;
 };
 
 export function useCards<T>(
   selector: (s: CardsStore) => T,
-  equalityFn: (a: T, b: T) => boolean = Object.is,
 ) {
-  const store = React.useContext(CardsCtx)?.store;
+  const store = React.useContext(CardsContext)?.store;
   if (!store) throw new Error('useCards must be used inside <CardsProvider>');
-  return store;
+  return selector(store.getState());
 }
 
 export function useCardsDispatch() {
-  const ctx = useContext(CardsCtx);
+  const ctx = useContext(CardsContext);
   if (!ctx) throw new Error('useCardsDispatch must be used inside <CardsProvider>');
   return ctx.dispatch;
 }

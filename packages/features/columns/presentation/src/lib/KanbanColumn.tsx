@@ -5,8 +5,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { MoreHorizontal } from 'lucide-react';
 import { Column } from '@tc/columns/domain';
 import { Action } from '@tc/foundation/actions';
-import { useSortable } from '@dnd-kit/sortable';
-import { useDroppable } from '@dnd-kit/core';
 
 export type KanbanBoardProps = {
   id: string;
@@ -19,6 +17,7 @@ export const KanbanColumn = ({ id, children, className }: KanbanBoardProps) => {
 
   return (
     <div
+      id={id}
       className={cn(
         'flex size-full min-h-40 flex-col divide-y rounded-md bg-secondary text-xs shadow-sm transition-all',
         className
@@ -78,7 +77,7 @@ export const KanbanHeader = ({ children, boardId, column, columns, dispatch, cla
   };
 
   return (
-    <div className={cn('m-0 font-semibold text-sm p-3 border-0 flex justify-between items-center', className)} {...props}>
+    <div id={boardId} className={cn('m-0 font-semibold text-sm p-3 border-0 flex justify-between items-center', className)} {...props}>
       {children}
       <DropdownMenu>
         <DropdownMenuTrigger>
