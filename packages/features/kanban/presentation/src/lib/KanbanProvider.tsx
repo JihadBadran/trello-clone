@@ -1,207 +1,418 @@
 'use client';
-import type {
-  Announcements,
-  DndContextProps,
+import {
+  DndContext,
+  DragOverlay,
   DragEndEvent,
   DragOverEvent,
   DragStartEvent,
-} from '@dnd-kit/core';
-import {
-  closestCorners,
-  DndContext,
-  DragOverlay,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
+  UniqueIdentifier,
+  CollisionDetection,
+  closestCenter,
+  pointerWithin,
+  rectIntersection,
+  MeasuringStrategy,
+  getFirstCollision,
 } from '@dnd-kit/core';
 import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import {
-  createContext,
-  type ReactNode,
   useState,
+  useCallback,
+  createContext,
   useContext,
+  ReactNode,
+  useRef,
+  useMemo,
   useEffect,
 } from 'react';
 import { createPortal } from 'react-dom';
-import { t } from '@tc/infra/dnd';
-export type { DragEndEvent } from '@dnd-kit/core';
+import { useKanbanCards, useKanbanDispatch } from '@tc/kanban/application-react';
+import type { Card } from '@tc/cards/domain';
+
+/**
+ * Calculate new position based on target index in sorted array
+ *
+ * Example:
+ * [{id: 1, pos: 100}, {id: 2, pos: 200}, {id: 3, pos: 300}]
+ * move id:3 to index 1 => position = (100 + 200) / 2 = 150
+ * Result: [{id: 1, pos: 100}, {id: 3, pos: 150}, {id: 2, pos: 200}]
+ */
+function calculateNewPosition(sortedCards: Array<{ position: number }>, targetIndex: number): number {
+  const STEP = 100;
+  console.log("sorted Cards", sortedCards, targetIndex);
+
+  if (sortedCards.length === 0) {
+    return STEP;
+  }
+
+  if (targetIndex <= 0) {
+    // Moving to the beginning
+    return Math.floor(sortedCards[0].position / 2);
+  }
+
+  if (targetIndex >= sortedCards.length) {
+    // Moving to the end
+    return sortedCards[sortedCards.length - 1].position + STEP;
+  }
+
+  // Moving between cards - use average of surrounding positions
+  const prevCard = sortedCards[targetIndex - 1];
+  const nextCard = sortedCards[targetIndex];
+  console.log("prevCard", prevCard, "nextCard", nextCard, (prevCard.position + nextCard.position), (prevCard.position + nextCard.position) / 2);
+  return Math.floor((prevCard.position + nextCard.position) / 2);
+}
+
 
 export type KanbanItemProps = {
-  id: string;
+  id: UniqueIdentifier;
   name: string;
-  column: string;
+  column: UniqueIdentifier;
 } & Record<string, unknown>;
 
 export type KanbanColumnProps = {
-  id: string;
+  id: UniqueIdentifier;
   name: string;
 } & Record<string, unknown>;
 
-export type KanbanContextProps<T extends KanbanItemProps = KanbanItemProps, C extends KanbanColumnProps = KanbanColumnProps> = {
-  columns: C[];
-  data: T[];
-  activeCardId: string | null;
-  dropHint: { overId: string | null; place: 'before' | 'after' | null; columnId: string | null } | null;
+type Items = Record<UniqueIdentifier, UniqueIdentifier[]>;
+
+export type KanbanContextProps = {
+  items: Items;
+  columns: KanbanColumnProps[];
+  activeId: UniqueIdentifier | null;
 };
 
-export const KanbanContext = createContext<KanbanContextProps>({ columns: [], data: [], activeCardId: null, dropHint: null });
+export const KanbanContext = createContext<KanbanContextProps>({
+  items: {},
+  columns: [],
+  activeId: null,
+});
 
-export const useDndKanban = () => useContext(KanbanContext as any);
+export const useDndKanban = () => useContext(KanbanContext);
 
-export type KanbanProviderProps<
-  T extends KanbanItemProps = KanbanItemProps,
-  C extends KanbanColumnProps = KanbanColumnProps,
-> = Omit<DndContextProps, 'children'> & {
-  children: (column: C) => ReactNode;
-  className?: string;
-  columns: C[];
-  data: T[];
-  onDataChange?: (data: T[]) => void;
-  onDragStart?: (event: DragStartEvent) => void;
-  onDragEnd?: (event: DragEndEvent) => void;
-  onDragOver?: (event: DragOverEvent) => void;
+export type KanbanProviderProps = {
+  children: ReactNode;
+  boardId: string;
+  columns: KanbanColumnProps[];
+  onDragOverCard?: (
+    activeId: UniqueIdentifier,
+    overId: UniqueIdentifier
+  ) => void;
+  onDragEndCard: (props:
+    { cardId: UniqueIdentifier,
+      targetColumnId: UniqueIdentifier,
+      position: number,
+    }
+  ) => void;
+  onDragCancel?: () => void;
+  renderCardDragOverlay: (card: KanbanItemProps) => ReactNode;
 };
 
-export const KanbanProvider = <
-  T extends KanbanItemProps = KanbanItemProps,
-  C extends KanbanColumnProps = KanbanColumnProps,
->({
+export const KanbanProvider = ({
   children,
-  onDragStart,
-  onDragEnd,
-  onDragOver,
-  className,
+  boardId,
   columns,
-  data,
-  onDataChange,
-  ...props
-}: KanbanProviderProps<T, C>) => {
-  const [activeCardId, setActiveCardId] = useState<string | null>(null);
-  const [activeSize, setActiveSize] = useState<{ width: number; height: number } | null>(null);
-  const [dropHint, setDropHint] = useState<{ overId: string | null; place: 'before' | 'after' | null; columnId: string | null } | null>(null);
-  const [internalData, setInternalData] = useState<T[]>(data);
+  onDragOverCard,
+  onDragEndCard,
+  onDragCancel,
+  renderCardDragOverlay,
+}: KanbanProviderProps) => {
+  const dispatch = useKanbanDispatch();
+  const storeCards = useKanbanCards(boardId);
 
-  // keep internal data in sync with props when not dragging
-  useEffect(() => {
-    if (!activeCardId) setInternalData(data);
-  }, [data, activeCardId]);
+  // Create items structure from store data
+  const items = useMemo(() => {
+    const newItems: Items = {};
+    columns.forEach((col) => {
+      newItems[col.id] = storeCards
+        .filter((card) => String(card.column_id) === String(col.id))
+        .sort((a, b) => a.position - b.position)
+        .map((card) => card.id);
+    });
+    return newItems;
+  }, [storeCards, columns]);
+
+  // Store original items for drag cancel (currently unused but kept for future rollback functionality)
+  const [clonedItems, setClonedItems] = useState<Items | null>(null);
+
+  const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
+  const lastOverId = useRef<UniqueIdentifier | null>(null);
+  const recentlyMovedToNewContainer = useRef(false);
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(MouseSensor),
+    useSensor(TouchSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveCardId(event.active.id as string);
-    const rect = event.active.rect.current.translated || event.active.rect.current.initial;
-    if (rect) {
-      setActiveSize({ width: rect.width, height: rect.height });
+  const findContainer = (id: UniqueIdentifier) => {
+    if (id in items) {
+      return id;
     }
-    onDragStart?.(event);
+
+    return Object.keys(items).find((key) => items[key].includes(id));
   };
 
-  const handleDragOver = (event: DragOverEvent) => {
-    const { active, over } = event;
-    if (!over) {
+  const getIndex = (id: UniqueIdentifier) => {
+    const container = findContainer(id);
+
+    if (!container) {
+      return -1;
+    }
+
+    const index = items[container].indexOf(id);
+
+    return index;
+  };
+
+  /**
+   * Custom collision detection strategy optimized for multiple containers
+   *
+   * - First, find any droppable containers intersecting with the pointer.
+   * - If there are none, find intersecting containers with the active draggable.
+   * - If there are no intersecting containers, return the last matched intersection
+   *
+   */
+  const collisionDetectionStrategy: CollisionDetection = useCallback(
+    (args) => {
+      if (activeId && activeId in items) {
+        return closestCenter({
+          ...args,
+          droppableContainers: args.droppableContainers.filter(
+            (container) => container.id in items
+          ),
+        });
+      }
+
+      // Start by finding any intersecting droppable
+      const pointerIntersections = pointerWithin(args);
+      const intersections =
+        pointerIntersections.length > 0
+          ? // If there are droppables intersecting with the pointer, return those
+            pointerIntersections
+          : rectIntersection(args);
+      let overId = getFirstCollision(intersections, 'id');
+
+      if (overId != null) {
+        if (overId in items) {
+          const containerItems = items[overId];
+
+          // If a container is matched and it contains items (columns 'A', 'B', 'C')
+          if (containerItems.length > 0) {
+            // Return the closest droppable within that container
+            overId = closestCenter({
+              ...args,
+              droppableContainers: args.droppableContainers.filter(
+                (container) =>
+                  container.id !== overId &&
+                  containerItems.includes(container.id)
+              ),
+            })[0]?.id;
+          }
+        }
+
+        lastOverId.current = overId;
+
+        return [{ id: overId }];
+      }
+
+      // When a draggable item moves to a new container, the layout may shift
+      // and the `overId` may become `null`. We manually set the cached `lastOverId`
+      // to the id of the draggable item that was moved to the new container, otherwise
+      // the previous `overId` will be returned which can cause items to incorrectly shift positions
+      if (recentlyMovedToNewContainer.current) {
+        lastOverId.current = activeId;
+      }
+
+      // If no droppable is matched, return the last match
+      return lastOverId.current ? [{ id: lastOverId.current }] : [];
+    },
+    [activeId, items]
+  );
+
+  const handleDragStart = ({ active }: DragStartEvent) => {
+    setActiveId(active.id);
+    setClonedItems(items);
+  };
+
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      recentlyMovedToNewContainer.current = false;
+    });
+  }, [items]);
+
+  const handleDragOver = ({ active, over }: DragOverEvent) => {
+    const overId = over?.id;
+
+    if (overId == null || active.id in items) {
       return;
     }
-    const activeItem = data.find((item) => item.id === active.id);
-    const overItem = data.find((item) => item.id === over.id);
-    if (!(activeItem)) {
+
+    // Call the optional onDragOverCard callback
+    if (onDragOverCard && overId) {
+      onDragOverCard(active.id, overId);
+    }
+
+    const overContainer = findContainer(overId);
+    const activeContainer = findContainer(active.id);
+
+    if (!overContainer || !activeContainer) {
       return;
     }
-    const activeColumn = activeItem.column;
-    const overColumn =
-      overItem?.column ||
-      columns.find(col => col.id === over.id)?.id ||
-      columns[0]?.id;
-    if (activeColumn !== overColumn) {
-      setInternalData((prev) => {
-        if (!overColumn) return prev;
-        const newData = [...prev];
-        const activeIndex = newData.findIndex((item) => item.id === active.id);
-        if (activeIndex >= 0) newData[activeIndex] = { ...(newData[activeIndex] as any), column: overColumn } as T;
-        return newData;
+
+    if (activeContainer !== overContainer) {
+      const overItems = items[overContainer];
+      const overIndex = overItems.indexOf(overId);
+
+      let newIndex: number;
+
+      if (overId in items) {
+        newIndex = overItems.length + 1;
+      } else {
+        const isBelowOverItem =
+          over &&
+          active.rect.current.translated &&
+          active.rect.current.translated.top >
+            over.rect.top + over.rect.height;
+
+        const modifier = isBelowOverItem ? 1 : 0;
+
+        newIndex =
+          overIndex >= 0 ? overIndex + modifier : overItems.length + 1;
+      }
+
+      recentlyMovedToNewContainer.current = true;
+
+      // Calculate new position based on the target index using better algorithm
+      const targetCards = storeCards
+        .filter((card) => String(card.column_id) === String(overContainer) && card.id !== active.id)
+        .sort((a, b) => a.position - b.position);
+
+      const newPosition = calculateNewPosition(targetCards, newIndex);
+
+      // Dispatch the move action to the store
+      dispatch({
+        type: 'cards/move',
+        payload: {
+          cardId: active.id.toString(),
+          targetColumnId: overContainer.toString(),
+          position: newPosition,
+        },
       });
     }
-    // Compute drop hint (position indicator) using rect midpoints like docs
-    const activeRect = event.active.rect.current.translated || event.active.rect.current.initial;
-    const overRect = over?.rect;
-    const isAfter = overItem && activeRect && overRect
-      ? (activeRect.top + activeRect.height / 2) > (overRect.top + overRect.height / 2)
-      : true;
-    const place: 'before' | 'after' = overItem ? (isAfter ? 'after' : 'before') : 'after';
-    const columnId = overItem ? overItem.column : (columns.find(col => col.id === over.id)?.id || null);
-    setDropHint({ overId: overItem?.id ?? null, place, columnId });
-    onDragOver?.(event);
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    setActiveCardId(null);
-    setActiveSize(null);
-    setDropHint(null);
-    onDragEnd?.(event);
-    // If consumer provides an onDragEnd handler, assume it will update data via actions.
-    // Avoid doing local reordering here to prevent conflicts.
-    if (onDragEnd) {
-      return;
-    }
-    const { active, over } = event;
-    if (!over || active.id === over.id) {
-      return;
-    }
-    let newData = [...internalData];
-    const oldIndex = newData.findIndex((item) => item.id === active.id);
-    const newIndex = newData.findIndex((item) => item.id === over.id);
-    newData = arrayMove(newData, oldIndex, newIndex);
-    setInternalData(newData as T[]);
+  const handleDragCancel = () => {
+    // For now, we'll rely on the store's natural state management
+    // In the future, we could implement store-level rollback if needed
+    setActiveId(null);
+    setClonedItems(null);
+    onDragCancel?.();
   };
 
-  const announcements: Announcements = {
-    onDragStart({ active }) {
-      const { name, column } = internalData.find((item) => item.id === active.id) ?? {};
-      return `Picked up the card "${name}" from the "${column}" column`;
-    },
-    onDragOver({ active, over }) {
-      const { name } = internalData.find((item) => item.id === active.id) ?? {};
-      const newColumn = columns.find((column) => column.id === over?.id)?.name;
-      return `Dragged the card "${name}" over the "${newColumn}" column`;
-    },
-    onDragEnd({ active, over }) {
-      const { name } = internalData.find((item) => item.id === active.id) ?? {};
-      const newColumn = columns.find((column) => column.id === over?.id)?.name;
-      return `Dropped the card "${name}" into the "${newColumn}" column`;
-    },
-    onDragCancel({ active }) {
-      const { name } = internalData.find((item) => item.id === active.id) ?? {};
-      return `Cancelled dragging the card "${name}"`;
-    },
+  const handleDragEnd = ({ active, over }: DragEndEvent) => {
+    const activeContainer = findContainer(active.id);
+
+    if (!activeContainer) {
+      setActiveId(null);
+      return;
+    }
+
+    const overId = over?.id;
+
+    if (overId == null) {
+      setActiveId(null);
+      return;
+    }
+
+    const overContainer = findContainer(overId);
+
+    if (overContainer) {
+      const activeIndex = items[activeContainer].indexOf(active.id);
+      const overIndex = items[overContainer].indexOf(overId);
+
+      // Handle moves within the same container
+      if (activeContainer === overContainer && activeIndex !== overIndex) {
+        const containerCards = storeCards
+          .filter((card) => String(card.column_id) === String(overContainer) && card.id !== active.id)
+          .sort((a, b) => a.position - b.position);
+
+        const newPosition = calculateNewPosition(containerCards, overIndex);
+        console.log("newPosition", newPosition);
+
+        // Dispatch the move action to the store
+        // dispatch({
+        //   type: 'cards/move',
+        //   payload: {
+        //     cardId: active.id.toString(),
+        //     targetColumnId: overContainer.toString(),
+        //     position: newPosition,
+        //   },
+        // });
+
+        // Call the callback with updated items
+        if (activeId && overContainer) {
+          onDragEndCard({
+            cardId: activeId,
+            targetColumnId: overContainer,
+            position: newPosition,
+          });
+        }
+      }
+
+      // Handle cross-container moves that were already handled in onDragOver
+      if (activeContainer !== overContainer) {
+        // The items have already been moved in onDragOver, just call the callback
+        const finalItems = items[overContainer];
+        const finalIndex = finalItems.indexOf(active.id);
+        const newPosition = calculateNewPosition(finalItems, finalIndex);
+        onDragEndCard({
+          cardId: active.id,
+          targetColumnId: overContainer,
+          position: newPosition,
+        });
+      }
+    }
+
+    setActiveId(null);
+    setClonedItems(null);
   };
+
+  const activeCard = activeId ? storeCards.find((c) => c.id === activeId) : null;
+
+  // Convert Card to KanbanItemProps for drag overlay
+  const adaptCardToKanbanItem = (card: Card): KanbanItemProps => ({
+    id: card.id,
+    name: card.title,
+    column: card.column_id,
+  });
 
   return (
-    <KanbanContext.Provider value={{ columns, data: internalData, activeCardId, dropHint }}>
+    <KanbanContext.Provider value={{ items, columns, activeId }}>
       <DndContext
-        accessibility={{ announcements }}
-        collisionDetection={closestCorners}
-        onDragEnd={handleDragEnd}
-        onDragOver={handleDragOver}
-        onDragStart={handleDragStart}
         sensors={sensors}
-        {...props}
+        collisionDetection={collisionDetectionStrategy}
+        measuring={{
+          droppable: {
+            strategy: MeasuringStrategy.Always,
+          },
+        }}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragEnd={handleDragEnd}
+        onDragCancel={handleDragCancel}
       >
-        <div className='flex-1 flex flex-row w-full gap-4 py-2 px-6'>
-          {columns.map((column) => children(column))}
-        </div>
-        {typeof window !== 'undefined' &&
-          createPortal(
-            <DragOverlay>
-              <div style={{ width: activeSize?.width, height: activeSize?.height }} className="opacity-90">
-                <t.Out />
-              </div>
-            </DragOverlay>,
-            document.body
-          )}
+        {children}
+        {createPortal(
+          <DragOverlay>
+            {activeCard ? renderCardDragOverlay(adaptCardToKanbanItem(activeCard)) : null}
+          </DragOverlay>,
+          document.body
+        )}
       </DndContext>
     </KanbanContext.Provider>
   );

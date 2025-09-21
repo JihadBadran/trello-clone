@@ -1,11 +1,12 @@
 'use client';
-import { useDroppable } from '@dnd-kit/core';
 import { cn } from '@tc/uikit';
 import { HTMLAttributes, ReactNode, useState } from 'react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, Dialog, DialogContent, DialogHeader, DialogTitle, Input, Button } from '@tc/uikit';
 import { MoreHorizontal } from 'lucide-react';
 import { Column } from '@tc/columns/domain';
 import { Action } from '@tc/foundation/actions';
+import { useSortable } from '@dnd-kit/sortable';
+import { useDroppable } from '@dnd-kit/core';
 
 export type KanbanBoardProps = {
   id: string;
@@ -14,17 +15,14 @@ export type KanbanBoardProps = {
 };
 
 export const KanbanColumn = ({ id, children, className }: KanbanBoardProps) => {
-  const { isOver, setNodeRef } = useDroppable({
-    id,
-  });
+
+
   return (
     <div
       className={cn(
-        'flex size-full min-h-40 flex-col divide-y overflow-hidden rounded-md bg-secondary text-xs shadow-sm transition-all border-2',
-        isOver ? 'border-primary' : 'border-transparent',
+        'flex size-full min-h-40 flex-col divide-y rounded-md bg-secondary text-xs shadow-sm transition-all',
         className
       )}
-      ref={setNodeRef}
     >
       {children}
     </div>

@@ -41,7 +41,9 @@ export function registerBoardsActions(store: StoreApi<BoardsStore>) {
       api.getState().upsertBoard({ ...payload, is_archived: false, updated_at: new Date().toISOString() });
     },
     toPersist: async ({ repos }, { payload }: Action<Board>) => {
-      await (repos.boards as BoardsRepoIDB).putLocal({ ...payload, is_archived: false, updated_at: new Date().toISOString() });
+      const boardWithTimestamp = { ...payload, is_archived: false, updated_at: new Date().toISOString() };
+      await (repos.boards as BoardsRepoIDB).putLocal(boardWithTimestamp);
+      await (repos.boards as BoardsRepoIDB).enqueueUpsert(boardWithTimestamp);
     },
     toCloud: async (_, { payload }: Action<Board>) => {
       await BoardsRepoSupabase.upsert({ ...payload, is_archived: false, updated_at: new Date().toISOString() });
@@ -58,7 +60,9 @@ export function registerBoardsActions(store: StoreApi<BoardsStore>) {
     toPersist: async ({ repos }, { payload }: Action<{ id: string }>) => {
       const b = await repos.boards.get(payload.id);
       if (!b) return;
-      await (repos.boards as BoardsRepoIDB).putLocal({ ...b, is_archived: true, updated_at: new Date().toISOString() });
+      const archivedBoard = { ...b, is_archived: true, updated_at: new Date().toISOString() };
+      await (repos.boards as BoardsRepoIDB).putLocal(archivedBoard);
+      await (repos.boards as BoardsRepoIDB).enqueueUpsert(archivedBoard);
     },
     toCloud: async ({ repos }, { payload }: Action<{ id: string }>) => {
       const b = await repos.boards.get(payload.id);
@@ -72,7 +76,9 @@ export function registerBoardsActions(store: StoreApi<BoardsStore>) {
       api.getState().upsertBoard({ ...payload, updated_at: new Date().toISOString() });
     },
     toPersist: async ({ repos }, { payload }: Action<Board>) => {
-      await (repos.boards as BoardsRepoIDB).putLocal({ ...payload, updated_at: new Date().toISOString() });
+      const boardWithTimestamp = { ...payload, updated_at: new Date().toISOString() };
+      await (repos.boards as BoardsRepoIDB).putLocal(boardWithTimestamp);
+      await (repos.boards as BoardsRepoIDB).enqueueUpsert(boardWithTimestamp);
     },
     toCloud: async (_, { payload }: Action<Board>) => {
       await BoardsRepoSupabase.upsert({ ...payload, updated_at: new Date().toISOString() });

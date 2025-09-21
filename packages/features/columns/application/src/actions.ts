@@ -44,7 +44,9 @@ export function registerColumnsActions(store: StoreApi<ColumnsStore>) {
       api.getState().upsertColumn({ ...payload, updated_at: new Date().toISOString() as ISODateTime });
     },
     toPersist: async ({ repos }, { payload }) => {
-      await (repos.columns as ColumnsRepoIDB).putLocal({ ...payload, updated_at: new Date().toISOString() as ISODateTime });
+      const columnWithTimestamp = { ...payload, updated_at: new Date().toISOString() as ISODateTime };
+      await (repos.columns as ColumnsRepoIDB).putLocal(columnWithTimestamp);
+      await (repos.columns as ColumnsRepoIDB).enqueueUpsert(columnWithTimestamp);
     },
     toCloud: async (_, { payload }) => {
       await ColumnsRepoSupabase.upsert({ ...payload, updated_at: new Date().toISOString() as ISODateTime });
@@ -56,7 +58,9 @@ export function registerColumnsActions(store: StoreApi<ColumnsStore>) {
       api.getState().upsertColumn({ ...payload, updated_at: new Date().toISOString() as ISODateTime });
     },
     toPersist: async ({ repos }, { payload }) => {
-      await (repos.columns as ColumnsRepoIDB).putLocal({ ...payload, updated_at: new Date().toISOString() as ISODateTime });
+      const columnWithTimestamp = { ...payload, updated_at: new Date().toISOString() as ISODateTime };
+      await (repos.columns as ColumnsRepoIDB).putLocal(columnWithTimestamp);
+      await (repos.columns as ColumnsRepoIDB).enqueueUpsert(columnWithTimestamp);
     },
     toCloud: async (_, { payload }) => {
       await ColumnsRepoSupabase.upsert({ ...payload, updated_at: new Date().toISOString() as ISODateTime });
@@ -69,6 +73,7 @@ export function registerColumnsActions(store: StoreApi<ColumnsStore>) {
     },
     toPersist: async ({ repos }, { payload }) => {
       await (repos.columns as ColumnsRepoIDB).removeLocal(payload.id);
+      await (repos.columns as ColumnsRepoIDB).enqueueRemove(payload.id);
     },
     toCloud: async (_, { payload }) => {
       await ColumnsRepoSupabase.remove(payload.id);
@@ -85,7 +90,9 @@ export function registerColumnsActions(store: StoreApi<ColumnsStore>) {
     toPersist: async ({ repos }, { payload }) => {
       const column = await repos.columns.get(payload.id);
       if (column) {
-        await (repos.columns as ColumnsRepoIDB).putLocal({ ...column, title: payload.title, updated_at: new Date().toISOString() as ISODateTime });
+        const updatedColumn = { ...column, title: payload.title, updated_at: new Date().toISOString() as ISODateTime };
+        await (repos.columns as ColumnsRepoIDB).putLocal(updatedColumn);
+        await (repos.columns as ColumnsRepoIDB).enqueueUpsert(updatedColumn);
       }
     },
     toCloud: async ({ repos }, { payload }) => {
@@ -106,7 +113,9 @@ export function registerColumnsActions(store: StoreApi<ColumnsStore>) {
     toPersist: async ({ repos }, { payload }) => {
       const column = await repos.columns.get(payload.columnId);
       if (column) {
-        await (repos.columns as ColumnsRepoIDB).putLocal({ ...column, position: payload.newPosition, updated_at: new Date().toISOString() as ISODateTime });
+        const resequencedColumn = { ...column, position: payload.newPosition, updated_at: new Date().toISOString() as ISODateTime };
+        await (repos.columns as ColumnsRepoIDB).putLocal(resequencedColumn);
+        await (repos.columns as ColumnsRepoIDB).enqueueUpsert(resequencedColumn);
       }
     },
     toCloud: async ({ repos }, { payload }) => {

@@ -141,7 +141,6 @@ export class MultiSyncController {
   }
 
   private async pushOutboxBatches(ch: ChannelConfig): Promise<boolean> {
-    console.log('[sync] pushOutboxBatches', { topic: ch.topic })
     let ackedAny = false
     // Track latest entity timestamp across loops to handle duplicates spanning batches
     type EntityLike = { id?: string; updated_at?: string; updatedAt?: string }
@@ -153,7 +152,6 @@ export class MultiSyncController {
     }
     while (true) {
       const rawBatch = await this.outbox.readNextBatch(ch.topic, this.pushBatchSize)
-      console.log('[sync] batch', { rawBatch })
       if (!rawBatch.length) return ackedAny
 
       // Deduplicate within the batch by entity id using updated_at (LWW).
@@ -179,7 +177,6 @@ export class MultiSyncController {
       if (!res.ok) {
         if (res.transient) throw res.error ?? new Error('transient push error')
         // permanent failure → do NOT ack; keep items for future retries
-        this.log('[sync] permanent push failure (no ack). Keeping outbox items.', { topic: ch.topic, error: res.error })
         return ackedAny
       }
 

@@ -42,7 +42,9 @@ export function registerCardsActions(store: StoreApi<CardsStore>) {
       api.getState().upsertCard({ ...payload, updated_at: new Date().toISOString() as ISODateTime });
     },
     toPersist: async ({ repos }, { payload }) => {
-      await repos.cards.putLocal({ ...payload, updated_at: new Date().toISOString() as ISODateTime });
+      const cardWithTimestamp = { ...payload, updated_at: new Date().toISOString() as ISODateTime };
+      await repos.cards.putLocal(cardWithTimestamp);
+      await repos.cards.enqueueUpsert(cardWithTimestamp);
     },
     toCloud: async ({ }, { payload }) => {
       await CardsRepoSupabase.upsert({ ...payload, updated_at: new Date().toISOString() as ISODateTime });
@@ -55,21 +57,26 @@ export function registerCardsActions(store: StoreApi<CardsStore>) {
     },
     toPersist: async ({ repos }, { payload }) => {
       await repos.cards.removeLocal(payload.id);
+      await repos.cards.enqueueRemove(payload.id);
     },
     toCloud: async ({}, { payload }) => {
       await CardsRepoSupabase.remove(payload.id);
     },
   };
 
-  const moveCard: ActionImpl<{ type: 'cards/move'; payload: { cardId: string, targetColumnId: string, overCardId?: string, place?: 'before' | 'after' } }, CardsCtx> = {
+  const moveCard: ActionImpl<{ type: 'cards/move'; payload: { cardId: string, targetColumnId: string, position: number } }, CardsCtx> = {
     toLocal: ({ api }, { payload }) => {
-      (api.getState() as any).moveCard(payload.cardId, payload.targetColumnId, payload.overCardId, payload.place);
+      console.log('toLocal Moving card', payload.cardId, 'to column', payload.targetColumnId, 'at position', payload.position, api.getState().moveCard);
+
+      api.getState().moveCard(payload.cardId, payload.targetColumnId, payload.position);
     },
     toPersist: async ({ api, repos }, { payload }) => {
-      const state = api.getState() as any;
+      const state = api.getState();
       const card = state.cards?.[payload.cardId];
       if (!card) return;
-      await repos.cards.putLocal({ ...card, updated_at: new Date().toISOString() as ISODateTime });
+      const updatedCard = { ...card, column_id: payload.targetColumnId, position: payload.position, updated_at: new Date().toISOString() as ISODateTime };
+      await repos.cards.putLocal(updatedCard);
+      await repos.cards.enqueueUpsert(updatedCard);
     },
     toCloud: async ({ api }, { payload }) => {
       const state = api.getState() as any;

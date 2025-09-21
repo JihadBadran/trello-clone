@@ -1,20 +1,23 @@
 'use client';
-import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import { t } from '@tc/infra/dnd';
+import { UniqueIdentifier, useDroppable } from '@dnd-kit/core';
 import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import {
+  Card,
   CardContent,
   CardHeader,
-  CardTitle
+  CardTitle,
 } from '@tc/uikit/components/ui/card';
-import { ScrollArea, ScrollBar } from '@tc/uikit/components/ui/scroll-area';
 import { cn } from '@tc/uikit/lib/utils';
 import { HTMLAttributes, ReactNode } from 'react';
 
 type KanbanItemBase = {
-  id: string;
+  id: UniqueIdentifier;
   name: string;
-  column: string;
+  column: UniqueIdentifier;
+  position?: number | string;
 } & Record<string, unknown>;
 
 export type KanbanCardProps<T extends KanbanItemBase = KanbanItemBase> = T & {
@@ -22,69 +25,26 @@ export type KanbanCardProps<T extends KanbanItemBase = KanbanItemBase> = T & {
   className?: string;
 };
 
-const CardInner = ({
-  name,
-  children,
-}: {
-  name: string;
-  children: ReactNode;
-}) => (
-  <>
-    <CardHeader className="flex gap-2 items-center">
-      <CardTitle>{name}</CardTitle>
-    </CardHeader>
-    <CardContent>{children}</CardContent>
-  </>
-);
-
 export const KanbanCard = <T extends KanbanItemBase = KanbanItemBase>({
-  id,
   name,
+  position,
   children,
   className,
 }: KanbanCardProps<T>) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transition,
-    transform,
-    isDragging,
-  } = useSortable({
-    id,
-  });
-
-  const style = {
-    transition: transition ? transition.toString() : undefined,
-    transform: CSS.Transform.toString(transform),
-    opacity: isDragging ? 0 : 1,
-  };
-
-  const content = <CardInner name={name}>{children}</CardInner>;
-
   return (
-    <div
-      ref={setNodeRef}
-      className={cn('cursor-grab gap-4 rounded-md shadow-sm px-4 py-6', className)}
-      style={style}
-      {...listeners}
-      {...attributes}
-    >
-      {content}
-      {isDragging && (
-        <t.In>
-          <div className={cn('rounded-md shadow-sm px-4 py-6 bg-secondary')}>{content}</div>
-        </t.In>
+    <Card
+      className={cn(
+        `cursor-grab gap-4 rounded-md shadow-sm px-4 py-6`,
+        className
       )}
-    </div>
+    >
+      <CardHeader className="flex gap-2 items-center">
+        <CardTitle>{name} - {position}</CardTitle>
+      </CardHeader>
+      <CardContent>{children}</CardContent>
+    </Card>
   );
 };
-
-export type DropHint = {
-  overId: string | null;
-  place: 'before' | 'after' | null;
-  columnId: string | null;
-} | null;
 
 export type KanbanCardsProps<T extends KanbanItemBase = KanbanItemBase> = Omit<
   HTMLAttributes<HTMLDivElement>,
@@ -92,36 +52,36 @@ export type KanbanCardsProps<T extends KanbanItemBase = KanbanItemBase> = Omit<
 > & {
   children: (item: T) => ReactNode;
   items: T[];
-  columnId: string;
-  dropHint?: DropHint;
+  columnId: UniqueIdentifier;
 };
 
 export const KanbanCards = <T extends KanbanItemBase = KanbanItemBase>({
   children,
-  className,
   items,
   columnId,
-  dropHint,
-  ...rest
 }: KanbanCardsProps<T>) => {
-  const filteredData = items.filter((item) => item.column === columnId);
+  const { setNodeRef, isOver } = useDroppable({ id: columnId });
+  // Filter and sort cards by position
+  const filteredData = items
+    .filter((item) => item.column === columnId)
+    .sort((a, b) => {
+
+      const posA = typeof a.position === 'number' ? a.position : parseInt(a.position as string, 10) || 0;
+      const posB = typeof b.position === 'number' ? b.position : parseInt(b.position as string, 10) || 0;
+      return posA - posB;
+    });
+
+  // Extract IDs in sorted order for SortableContext
   const sortableIds = filteredData.map((item) => item.id);
+
   return (
-    <ScrollArea className="overflow-hidden flex-1">
+    <div className={cn("flex flex-grow flex-col gap-2 p-2", isOver ? 'opacity-50' : 'opacity-100')} ref={setNodeRef}>
       <SortableContext
         items={sortableIds}
         strategy={verticalListSortingStrategy}
       >
-        <div
-          className={cn('flex flex-grow flex-col gap-2 p-2', className)}
-          {...rest}
-        >
-          {filteredData.map((item) => (
-            children(item)
-          ))}
-        </div>
+        {filteredData.map((item) => children(item))}
       </SortableContext>
-      <ScrollBar orientation="vertical" />
-    </ScrollArea>
+    </div>
   );
 };

@@ -27,8 +27,8 @@ async function tryEagerCloudPush<A extends Action, Ctx>(
 
 /**
  * Orchestrates the persistence and synchronization of an action.
- * It first persists the change locally, then attempts an eager push to the cloud.
- * If the cloud push fails or is not possible, it falls back to enqueueing the action in the outbox.
+ * It first persists the change locally (including outbox enqueueing), then attempts an eager push to the cloud.
+ * If the cloud push fails or is not possible, the action will be processed later by the sync controller.
  */
 export async function handlePersistence<A extends Action, Ctx>(
   handler: ActionImpl<A, Ctx>,
@@ -36,6 +36,7 @@ export async function handlePersistence<A extends Action, Ctx>(
   actionWithMeta: A,
 ) {
   // Always persist to local DB first for data integrity.
+  // The toPersist handler should handle both local storage and outbox enqueueing.
   if (handler.toPersist) {
     await handler.toPersist(ctx, actionWithMeta);
   }
@@ -45,18 +46,10 @@ export async function handlePersistence<A extends Action, Ctx>(
 
   // If the cloud push was successful, we're done.
   if (cloudPushSucceeded) {
+    console.log(`[${actionWithMeta.type}] Cloud push succeeded, action completed.`);
     return;
   }
 
-  // Fallback: Enqueue for background sync if offline or toCloud failed.
-  console.log(`[${actionWithMeta.type}] Enqueuing action for background sync.`);
-  const { repos } = ctx as any; // Using `any` for now to access enqueue methods
-  const [feature, op] = actionWithMeta.type.split('/');
-  const repo = repos[feature as keyof typeof repos];
-
-  if (op === 'upsert' || op === 'create' || op === 'update' || op === 'resequence' || op === 'updateTitle' || op === 'archive') {
-    await (repo as any).enqueueUpsert(actionWithMeta.payload);
-  } else if (op === 'delete') {
-    await (repo as any).enqueueRemove(actionWithMeta.payload.id);
-  }
+  // If we reach here, the action has been persisted locally and enqueued for background sync.
+  console.log(`[${actionWithMeta.type}] Action persisted locally and enqueued for background sync.`);
 }

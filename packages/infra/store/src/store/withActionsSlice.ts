@@ -37,9 +37,11 @@ export function withActionsSlice<S extends object, Ctx extends object>(deps: {
 
         console.log(`[${action.type}] handler: `, handler);
 
+        console.log(`[${action.type}] ctx: `, ctx);
         // 1. Run local mutation
         if (handler.toLocal) {
           const { toLocal } = handler;
+          console.log(`[${action.type}] toLocal: `, toLocal);
           await toLocal(ctx, action);
         }
 
