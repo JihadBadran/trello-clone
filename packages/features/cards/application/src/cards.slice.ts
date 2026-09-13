@@ -12,7 +12,6 @@ export type CardsSlice = {
 export const createCardsSlice: StateCreator<CardsSlice, [], [], CardsSlice> = (set, get) => ({
   cards: {},
   moveCard: (cardId: string, targetColumnId: string, newPosition: number, withRepositioning = false) => {
-    console.log('Moving card', cardId, 'to column', targetColumnId, 'at position', newPosition);
     if (withRepositioning) {
       // loop over all cards in the target column and update their position
       const cardsInTargetColumn = Object.values(get().cards).filter((c) => c.column_id === targetColumnId);

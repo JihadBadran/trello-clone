@@ -56,12 +56,10 @@ export class BoardsRepoIDB implements FeatureRepo<Board> {
   }
 
   async push(batch: OutboxItem<Board>[]): Promise<PushResult> {
-    console.log('pushing boards', batch);
     return Promise.resolve({ ok: true, ackIds: batch.map((i) => i.id) });
   }
 
   async pullSince(since: string | null, limit: number) {
-    console.log('pulling boards since', since, limit);
     return Promise.resolve({ ok: true, rows: [], cursor: new Date().toISOString() as ISODateTime });
   }
 };

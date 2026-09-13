@@ -1,11 +1,10 @@
 import { kanbanStore, refreshKanbanData } from './provider';
+import type { Column } from '@tc/columns/domain';
+import type { Card } from '@tc/cards/domain';
 
 export function useRefreshKanban() {
   return refreshKanbanData;
 }
-import type { Column } from '@tc/columns/domain';
-import type { Card } from '@tc/cards/domain';
-
 
 export function useKanbanDispatch() {
   return kanbanStore(s => s.dispatch);

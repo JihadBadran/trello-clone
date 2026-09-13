@@ -43,7 +43,6 @@ export const CardsRepoSupabase = {
     return { ok: true, ackIds: batch.map(i => i.id) };
   },
   async pullSince(since: ISODateTime | null, limit: number): Promise<PullResult<Card>> {
-    console.log('cards => pullSince', { since, limit });
     let q = supabase
       .from('cards')
       .select('*')

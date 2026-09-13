@@ -42,11 +42,9 @@ export class CardsRepoIDB implements FeatureRepo<Card> {
     this.onApply?.(row);
   }
   async push(batch: OutboxItem<Card>[]): Promise<PushResult> {
-    console.log('pushing cards', batch);
     return Promise.resolve({ ok: true, ackIds: batch.map((i) => i.id) });
   }
   async pullSince(since: ISODateTime | null, limit: number): Promise<PullResult<Card>> {
-    console.log('pulling cards since', since, limit);
     return Promise.resolve({ ok: true, rows: [], cursor: new Date().toISOString() as ISODateTime });
   }
 };

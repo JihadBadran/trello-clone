@@ -52,7 +52,6 @@ export const ColumnsRepoSupabase = {
     return { ok: true, ackIds: batch.map(i => i.id) };
   },
   async pullSince(since: ISODateTime | null, limit: number): Promise<PullResult<Column>> {
-    console.log('columns => pullSince', { since, limit });
     let q = supabase
       .from('columns')
       .select('*')

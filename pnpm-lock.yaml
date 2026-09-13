@@ -95,9 +95,9 @@ importers:
       react-router-dom:
         specifier: 6.29.0
         version: 6.29.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
-      tab-election:
-        specifier: ^4.2.8
-        version: 4.2.8
+      tab-bridge:
+        specifier: ^0.4.0
+        version: 0.4.0(react@19.0.0)(zustand@5.0.8(@types/react@19.0.0)(immer@9.0.21)(react@19.0.0)(use-sync-external-store@1.5.0(react@19.0.0)))
       tailwind-merge:
         specifier: ^3.3.1
         version: 3.3.1
@@ -231,6 +231,9 @@ importers:
       nx:
         specifier: 21.5.2
         version: 21.5.2(@swc-node/register@1.9.2(@swc/core@1.5.29(@swc/helpers@0.5.17))(@swc/types@0.1.25)(typescript@5.9.2))(@swc/core@1.5.29(@swc/helpers@0.5.17))
+      playwright:
+        specifier: ^1.63.0
+        version: 1.63.0
       postcss:
         specifier: 8.4.38
         version: 8.4.38
@@ -5816,6 +5819,16 @@ packages:
     resolution: {integrity: sha512-HRDzbaKjC+AOWVXxAU/x54COGeIv9eb+6CkDSQoNTt4XyWoIJvuPsXizxu/Fr23EiekbtZwmh1IcIG/l/a10GQ==}
     engines: {node: '>=8'}
 
+  playwright-core@1.63.0:
+    resolution: {integrity: sha512-rYCsBF/M5HjUch52bbtVONEFjv6Xu8sm8h72dNlR5bzIE1fvC/bxgspzkjSfU+MweEMmPM8KJebG6nnyxo5mCg==}
+    engines: {node: '>=20'}
+    hasBin: true
+
+  playwright@1.63.0:
+    resolution: {integrity: sha512-+7ziBLidS4NaNCdt57SUDT+wYmmd5fmiQejUic/kb+YsYSCPyOOE9sebzMjNmQrsnNpDJqd4WHvV/8lfKfUDUg==}
+    engines: {node: '>=20'}
+    hasBin: true
+
   portfinder@1.0.38:
     resolution: {integrity: sha512-rEwq/ZHlJIKw++XtLAO8PPuOQA/zaPJOZJ37BVuN97nLpMJeuDVLVGRwbFoBgLudgdTMP2hdRJP++H+8QOA3vg==}
     engines: {node: '>= 10.12'}
@@ -6733,8 +6746,22 @@ packages:
   symbol-tree@3.2.4:
     resolution: {integrity: sha512-9QNk5KwDF+Bvz+PyObkmSYjI5ksVUYtjW7AU22r2NKcfLJcXp96hkDWU3+XndOsUb+AQ9QhfzfCT2O+CNWT5Tw==}
 
-  tab-election@4.2.8:
-    resolution: {integrity: sha512-qHmh4jCMh1KKppqhIz3VWQPXGicCWaq2xtx9a37ZQroqbcXmCVUmmaf2rvFb0WThoJr9iaimK0PyHTxPkXcrDQ==}
+  tab-bridge@0.4.0:
+    resolution: {integrity: sha512-kU9NsL8Sl8Yo8v0aOaEUyUMcecUZmPA4jFZXuRlAnPJOZhe2mmwgaL1JfMcs/zkvjlu8mwuaxgB3U6rUG2nXNg==}
+    peerDependencies:
+      jotai: '>=2.0.0'
+      react: '>=18.0.0'
+      redux: '>=4.0.0'
+      zustand: '>=4.0.0'
+    peerDependenciesMeta:
+      jotai:
+        optional: true
+      react:
+        optional: true
+      redux:
+        optional: true
+      zustand:
+        optional: true
 
   tailwind-merge@3.3.1:
     resolution: {integrity: sha512-gBXpgUm/3rp1lMZZrM/w7D8GKqshif0zAymAhbCyIt8KMe+0v9DQ7cdYLR4FHH/cKpdTXb+A/tKKU3eolfsI+g==}
@@ -13817,6 +13844,12 @@ snapshots:
     dependencies:
       find-up: 4.1.0
 
+  playwright-core@1.63.0: {}
+
+  playwright@1.63.0:
+    dependencies:
+      playwright-core: 1.63.0
+
   portfinder@1.0.38:
     dependencies:
       async: 3.2.6
@@ -14836,7 +14869,10 @@ snapshots:
 
   symbol-tree@3.2.4: {}
 
-  tab-election@4.2.8: {}
+  tab-bridge@0.4.0(react@19.0.0)(zustand@5.0.8(@types/react@19.0.0)(immer@9.0.21)(react@19.0.0)(use-sync-external-store@1.5.0(react@19.0.0))):
+    optionalDependencies:
+      react: 19.0.0
+      zustand: 5.0.8(@types/react@19.0.0)(immer@9.0.21)(react@19.0.0)(use-sync-external-store@1.5.0(react@19.0.0))
 
   tailwind-merge@3.3.1: {}
 

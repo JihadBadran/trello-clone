@@ -1,105 +1,132 @@
-# Trello Clone (Nx + React)
+# Trello Clone
 
-An offline-first Kanban app built with Nx, React 19, Zustand, Tailwind v4, and Supabase. The monorepo is organized by domain features: `boards`, `columns`, `cards`, and a composing `kanban` feature.
+An offline-first Kanban board built with React 19, Zustand, Tailwind CSS v4, and Supabase.
 
-See `docs/` for architecture and implementation details:
+![CI](https://github.com/JihadBadran/trello-clone/actions/workflows/ci.yml/badge.svg)
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
-- `docs/ARCHITECTURE.md`
-- `docs/STATE.md`
-- `docs/THEMING.md`
-- `docs/CI-CD.md`
+<!-- Add a screenshot or GIF here -->
+<!-- ![Demo](./docs/screenshot.png) -->
 
-## Prerequisites
+## Features
 
-- Node >= 20 (see `package.json#engines`)
+- **Offline-first** — Create and edit boards, columns, and cards without an internet connection
+- **Real-time sync** — Changes sync across browser tabs and to Supabase in real-time
+- **Drag & drop** — Reorder cards and columns with @dnd-kit
+- **PWA** — Installable as a Progressive Web App with service worker caching
+- **Multi-tab** — Automatic leader election for cloud sync; all tabs share local state
+- **Type-safe** — Full TypeScript coverage with strict mode
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| Framework | React 19 |
+| State | Zustand (vanilla) |
+| Styling | Tailwind CSS v4 |
+| Backend | Supabase (Postgres + Realtime) |
+| Local DB | IndexedDB (via idb) |
+| Monorepo | Nx + pnpm |
+| Build | Vite 7 |
+| Routing | Tanstack Router |
+| Drag & Drop | @dnd-kit |
+
+## Getting Started
+
+### Prerequisites
+
+- Node >= 20
 - pnpm 9 (`npm i -g pnpm`)
 
-Optional:
-
-- Nx Console extension (VSCode/IntelliJ) for a great DX
-- Supabase CLI (only needed if you regenerate types or run local Supabase)
-
-## Quick Start
-
-1) Install dependencies
+### Install
 
 ```bash
+git clone https://github.com/JihadBadran/trello-clone.git
+cd trello-clone
 pnpm install
 ```
 
-2) Configure environment variables for the web app
-
-Create or edit `apps/web/.env`:
+### Configure
 
 ```bash
-VITE_SUPABASE_URL="https://<your-project>.supabase.co"
-VITE_SUPABASE_ANON_KEY="<your-anon-key>"
+cp apps/web/.env.example apps/web/.env
 ```
 
-The repo includes demo values that point to a public project. You can keep them for local development, or switch to your own Supabase project.
+Edit `apps/web/.env` with your Supabase credentials. The repo includes demo values for local development.
 
-3) Start the dev server
+### Run
 
 ```bash
 pnpm nx serve web
-# opens http://localhost:4200
+# → http://localhost:4200
 ```
 
-4) Explore the project graph
+## Project Structure
 
-```bash
-pnpm nx graph
 ```
+apps/
+  web/                           # Vite React app (routing, providers)
+
+packages/
+  foundation/
+    actions/                     # Action + ActionImpl types
+    types/                       # Shared scalars
+    utils/                       # LWW compare, helpers
+
+  infra/
+    idb/                         # IndexedDB outbox
+    supabase/                    # Client + typed RPC
+    sync-cloud/                  # MultiSyncController (leader only)
+    store/                       # Zustand base store
+
+  features/
+    boards/                      # Board CRUD
+    columns/                     # Column CRUD
+    cards/                       # Card CRUD + drag-and-drop
+    kanban/                      # Composes all features
+
+    # Each feature has:
+    domain/                      # Entities and value objects
+    data/                        # Repositories (IDB + Supabase)
+    application/                 # Zustand store and actions
+    application-react/           # React hooks and providers
+    presentation/                # UI components
+```
+
+## Architecture
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full architecture overview.
+
+**Key decisions:**
+
+- **Domain-driven feature slices** — Each feature (`boards`, `columns`, `cards`) is self-contained with its own domain, data, and presentation layers
+- **Zustand vanilla store** — Framework-agnostic state with React bindings
+- **Offline outbox pattern** — Local writes go to IndexedDB first; leader tab drains to Supabase
+- **tab-bridge** — Cross-tab state sync and leader election via BroadcastChannel
 
 ## Common Tasks
 
-- Build the app
-
 ```bash
+# Build
 pnpm nx build web
-```
 
-- Run tests
-
-```bash
+# Test
 pnpm nx test web
-```
 
-- Lint all projects
-
-```bash
+# Lint
 pnpm nx affected -t lint
+
+# Typecheck
+pnpm nx affected -t typecheck
+
+# Explore project graph
+pnpm nx graph
 ```
 
-## Supabase Types (optional)
+## Contributing
 
-If you use your own Supabase project, regenerate the typed API:
-
-```bash
-# Update the project-id first in package.json (scripts.cloud:types:gen)
-pnpm run cloud:types:gen
-```
-
-This writes `packages/infra/supabase/src/types.gen.ts` using the Supabase CLI. You may need to login first:
-
-```bash
-pnpm dlx supabase login
-```
-
-## Monorepo Layout (high level)
-
-- `apps/web/` – Vite React app (routing, providers)
-- `packages/foundation/` – shared types, actions, utils
-- `packages/infra/` – IndexedDB, Supabase client/types, sync controller, cross-tab sync
-- `packages/features/` – domain features (`boards`, `columns`, `cards`, `kanban`) split into `application`, `application-react`, `data`, `domain`, `presentation`
-
-More details in `docs/ARCHITECTURE.md`.
-
-## Notes
-
-- The app uses Tailwind v4 with the `@tailwindcss/vite` plugin. Tokens are defined in `apps/web/src/styles.css` and the UI Kit preset is consumed in `apps/web/tailwind.config.ts`.
-- The PWA service worker is enabled in dev (`vite-plugin-pwa`). If you see aggressive caching, perform a hard refresh or toggle "Update on reload" in DevTools > Application > Service Workers.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## License
 
-MIT
+[MIT](LICENSE)

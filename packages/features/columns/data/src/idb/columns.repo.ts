@@ -43,11 +43,9 @@ export class ColumnsRepoIDB implements FeatureRepo<Column> {
     this.onApply?.(row);
   }
   async push(batch: OutboxItem<Column>[]): Promise<PushResult> {
-    console.log('pushing columns', batch);
     return Promise.resolve({ ok: true, ackIds: batch.map((i) => i.id) });
   }
   async pullSince(since: string | null, limit: number) {
-    console.log('pulling columns since', since, limit);
     return Promise.resolve({ ok: true, rows: [], cursor: new Date().toISOString() as ISODateTime });
   }
 };

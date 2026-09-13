@@ -9,7 +9,7 @@ const preset: Partial<Config> = {
     },
   },
   plugins: [
-    // e.g., require('@tailwindcss/forms'), require('@tailwindcss/typography')
+    require('@tailwindcss/forms'), require('@tailwindcss/typography')
   ],
 }
 

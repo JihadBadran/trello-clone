@@ -1,5 +1,5 @@
 import React from 'react';
-import { kanbanStore, useKanbanDispatch } from '@tc/kanban/application-react';
+import { kanbanStore } from '@tc/kanban/application-react';
 import type { Board } from '@tc/boards/domain';
 import { v4 as uuid } from 'uuid';
 
@@ -14,16 +14,16 @@ export function useBoardsList(options?: { includeArchived?: boolean }) {
 }
 
 export function useCreateBoard() {
-  const dispatch = useKanbanDispatch();
+  const dispatch = kanbanStore(s => s.dispatch);
 
   return React.useCallback(
-    (input: { title: string }) =>
+    (input: { title: string, owner_id: string }) =>
       dispatch({
         type: 'boards/create',
         payload: {
           ...input,
           id: uuid(),
-          is_archived: false,
+          owner_id: input.owner_id,
           updated_at: new Date().toISOString(),
           created_at: new Date().toISOString(),
         } as Partial<Board>,
@@ -33,7 +33,7 @@ export function useCreateBoard() {
 }
 
 export function useArchiveBoard() {
-  const dispatch = useKanbanDispatch();
+  const dispatch = kanbanStore(s => s.dispatch);
   return React.useCallback(
     (board_id: string) => dispatch({ type: 'boards/archive', payload: { id: board_id } }),
     [dispatch],
