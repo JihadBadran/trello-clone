@@ -52,7 +52,39 @@ pnpm install
 cp apps/web/.env.example apps/web/.env
 ```
 
-Edit `apps/web/.env` with your Supabase credentials. The repo includes demo values for local development.
+Edit `apps/web/.env` with your Supabase credentials:
+
+```env
+VITE_SUPABASE_URL="https://YOUR_PROJECT.supabase.co"
+VITE_SUPABASE_ANON_KEY="your-anon-key-here"
+```
+
+### Set Up Supabase
+
+1. Create a free project at [supabase.com](https://supabase.com)
+2. Go to **Settings → API** and copy your project URL and anon key
+3. Paste them into `apps/web/.env`
+4. Run the database migrations:
+
+```bash
+# Install Supabase CLI (if not already installed)
+pnpm dlx supabase login
+
+# Link to your project
+pnpm dlx supabase link --project-ref YOUR_PROJECT_REF
+
+# Push migrations to create all tables and policies
+pnpm dlx supabase db push
+```
+
+This creates:
+- `boards`, `columns`, `cards` tables with UUID primary keys
+- `board_members` table for collaboration
+- `profiles` table linked to Supabase Auth
+- Row Level Security (RLS) policies for multi-tenant access
+- Realtime replication for live updates
+- Auto-updating `updated_at` triggers
+- Auto-ownership triggers for new boards
 
 ### Run
 
@@ -121,6 +153,9 @@ pnpm nx affected -t typecheck
 
 # Explore project graph
 pnpm nx graph
+
+# Regenerate Supabase types (after schema changes)
+pnpm run cloud:types:gen
 ```
 
 ## Contributing
